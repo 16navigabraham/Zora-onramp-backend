@@ -1,0 +1,27 @@
+export default () => ({
+    port: parseInt(process.env.PORT || '3002', 10),
+
+    flutterwave: {
+        publicKey: process.env.FLUTTERWAVE_PUBLIC_KEY,
+        secretKey: process.env.FLUTTERWAVE_SECRET_KEY,
+        encryptionKey: process.env.FLUTTERWAVE_ENCRYPTION_KEY,
+        webhookHash: process.env.FLUTTERWAVE_SECRET_HASH,
+        bvn: process.env.FLUTTERWAVE_BVN,
+    }, 
+
+    blockchain: {
+        rpcUrl: process.env.RPC_URL || 'https://mainnet.base.org',
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        operatorPrivateKey: process.env.OPERATOR_PRIVATE_KEY,
+        usdcAddress: process.env.USDC_ADDRESS,
+    },
+
+    exchange: {
+        ngnToUsdRate: parseFloat(process.env.NGN_TO_USD_RATE || '1650'),
+    },
+
+    cors: {
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3002',
+        credentials: true,
+    },
+});
