@@ -24,4 +24,9 @@ export default () => ({
         origin: process.env.CORS_ORIGIN || 'http://localhost:3002',
         credentials: true,
     },
+
+    telegram: {
+        botToken: process.env.TELEGRAM_BOT_TOKEN,
+        chatId: process.env.TELEGRAM_CHAT_ID,
+    },
 });
