@@ -23,19 +23,15 @@ export class OrderCleanupService implements OnModuleInit {
 
   async handleExpiredOrders() {
     try {
-      this.logger.log('Checking for expired orders...');
       const expiredOrders = this.orderRepository.findExpired();
       
-      this.logger.log(`Found ${expiredOrders.length} expired orders`);
-
       if (expiredOrders.length === 0) {
-        this.logger.log('No expired orders found');
         return;
       }
 
+      this.logger.log(`Processing ${expiredOrders.length} expired orders`);
+
       for (const order of expiredOrders) {
-        this.logger.log(`Processing expired order: ${order.orderId}`);
-        
         // Mark order as expired
         order.status = OrderStatus.EXPIRED;
         this.orderRepository.save(order);
