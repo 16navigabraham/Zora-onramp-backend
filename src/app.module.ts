@@ -6,6 +6,7 @@ import { ZoraModule } from "./zora/zora.module";
 import { FlutterwaveModule } from "./flutterwave/flutterwave.module";
 import { ContractsModule } from "./contracts/contracts.module";
 import { WebhookModule } from "./webhooks/webhook.module";
+import { TelegramModule } from "./telegram/telegram.module";
 import { HealthController } from "./health/health.controller";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -20,7 +21,8 @@ import { AppService } from "./app.service";
     FlutterwaveModule,
     ContractsModule,
     OrdersModule,
-    WebhookModule
+    WebhookModule,
+    TelegramModule
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
