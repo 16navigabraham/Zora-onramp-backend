@@ -79,6 +79,21 @@ export class OrderService {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
 
+    // Just return the order without processing payment
+    this.logger.log(`Retrieved order ${orderId}, status: ${order.status}`);
+    return order;
+  }
+
+  async getAllOrders(): Promise<Order[]> {
+    return this.orderRepository.findAll();
+  }
+
+  async processPayment(orderId: string): Promise<Order> {
+    const order = this.orderRepository.findById(orderId);
+    if (!order) {
+      throw new NotFoundException(`Order ${orderId} not found`);
+    }
+
     if (order.status !== OrderStatus.PENDING) {
       this.logger.warn(
         `Order ${orderId} is not pending, status: ${order.status}`,
@@ -127,53 +142,6 @@ export class OrderService {
     }
   }
 
-  async getAllOrders(): Promise<Order[]> {
-    return this.orderRepository.findAll();
-  }
-
-  async processPayment(orderId: string): Promise<Order> {
-    const order = this.orderRepository.findById(orderId);
-
-    if (!order) {
-      throw new NotFoundException(`Order ${orderId} not found`);
-    }
-
-    if (order.status !== OrderStatus.PENDING) {
-      this.logger.warn(
-        `Order ${orderId} is not pending, status: ${order.status}`,
-      );
-      return order;
-    }
-
-    try {
-      this.logger.log(`Processing payment for order ${orderId}`);
-
-      order.status = OrderStatus.CONFIRMED;
-      this.orderRepository.save(order);
-
-      const releaseTxHash = await this.contractsService.releaseUSDC(
-        order.orderHash,
-      );
-      order.status = OrderStatus.COMPLETED;
-      order.releaseTxHash = releaseTxHash;
-      order.completedAt = Date.now();
-      this.orderRepository.save(order);
-
-      this.logger.log(`Order ${orderId} completed successfully`);
-
-      return order;
-    } catch (error) {
-      this.logger.error(
-        `Failed to process payment for order ${orderId}: ${error.message}`,
-      );
-
-      order.status = OrderStatus.FAILED;
-      order.errorMessage = error.message;
-      this.orderRepository.save(order);
-
-      throw error;
-    }
-  }
 
   async verifyPayment(orderId: string): Promise<Order> {
     const order = this.orderRepository.findById(orderId);
