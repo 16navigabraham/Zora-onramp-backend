@@ -14,7 +14,7 @@ export class HealthController {
       return {
         success: true,
         status: 'operational',
-        timestamp: new Date().toISOString(),
+        timestamp: this.formatWATTime(new Date()),
         contract: {
           address: process.env.CONTRACT_ADDRESS,
           userBalance: balance,
@@ -34,7 +34,7 @@ export class HealthController {
       return {
         success: false,
         status: 'degraded',
-        timestamp: new Date().toISOString(),
+        timestamp: this.formatWATTime(new Date()),
         error: error.message,
       };
     }
@@ -45,7 +45,20 @@ export class HealthController {
     return {
       success: true,
       message: 'pong',
-      timestamp: new Date().toISOString(),
+      timestamp: this.formatWATTime(new Date()),
     };
+  }
+
+  private formatWATTime(date: Date): string {
+    return date.toLocaleString('en-GB', {
+      timeZone: 'Africa/Lagos',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).replace(',', '') + ' WAT';
   }
 }
