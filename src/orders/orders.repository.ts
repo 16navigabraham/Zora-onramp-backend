@@ -78,7 +78,13 @@ export class OrdersRepository {
   findExpired(): Order[] {
     const now = Date.now();
     return Array.from(this.orders.values()).filter(
-      (order) => order.expiresAt < now && order.status === 'pending',
+      (order) => {
+        // Handle both Unix timestamp and ISO string formats
+        const expiresAt = typeof order.expiresAt === 'string' 
+          ? new Date(order.expiresAt).getTime() 
+          : order.expiresAt;
+        return expiresAt < now && order.status === 'pending';
+      }
     );
   }
 

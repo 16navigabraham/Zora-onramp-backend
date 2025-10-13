@@ -88,6 +88,19 @@ export class OrderService {
     return this.orderRepository.findAll();
   }
 
+  async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
+    const order = this.orderRepository.findById(orderId);
+    if (!order) {
+      throw new NotFoundException(`Order ${orderId} not found`);
+    }
+    
+    order.status = status;
+    this.orderRepository.save(order);
+    this.logger.log(`Order ${orderId} status updated to ${status}`);
+    
+    return order;
+  }
+
   async processPayment(orderId: string): Promise<Order> {
     const order = this.orderRepository.findById(orderId);
     if (!order) {
