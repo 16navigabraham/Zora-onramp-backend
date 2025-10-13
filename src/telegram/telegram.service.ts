@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
 export interface TelegramNotification {
-  type: 'order_created' | 'payment_success' | 'payment_failed' | 'server_event';
+  type: 'order_created' | 'payment_success' | 'payment_failed' | 'order_cancelled' | 'server_event';
   orderId?: string;
   amount?: number;
   currency?: string;
@@ -88,6 +88,7 @@ export class TelegramService {
       'order_created': '🆕',
       'payment_success': '✅',
       'payment_failed': '❌',
+      'order_cancelled': '⏰',
       'server_event': '🔔'
     };
     return emojis[type] || '📢';
@@ -136,6 +137,17 @@ export class TelegramService {
       orderId,
       error,
       message: `Payment failed for order ${orderId}`,
+      timestamp: new Date()
+    });
+  }
+
+  async notifyOrderCancelled(orderId: string, amount: number, currency: string): Promise<void> {
+    await this.sendNotification({
+      type: 'order_cancelled',
+      orderId,
+      amount,
+      currency,
+      message: `Order cancelled due to timeout - no payment received within 15 minutes`,
       timestamp: new Date()
     });
   }

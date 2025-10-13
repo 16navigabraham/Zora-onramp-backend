@@ -29,9 +29,11 @@ export class OrderCleanupService {
         order.status = OrderStatus.EXPIRED;
         this.orderRepository.save(order);
 
-        // Send Telegram notification
-        await this.telegramService.notifyServerEvent(
-          `⏰ Order ${order.orderId} expired after 15 minutes (${order.amountNGN} NGN)`
+        // Send Telegram notification for order cancellation
+        await this.telegramService.notifyOrderCancelled(
+          order.orderId,
+          order.amountNGN,
+          'NGN'
         );
 
         this.logger.log(`Order ${order.orderId} marked as expired`);
