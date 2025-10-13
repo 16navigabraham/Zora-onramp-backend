@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { OrdersController } from './orders.controller';
 import { OrderService } from './orders.service';
 import { OrdersRepository } from './orders.repository';
@@ -9,7 +8,7 @@ import { FlutterwaveModule } from '../flutterwave/flutterwave.module';
 import { ContractsModule } from '../contracts/contracts.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), ZoraModule, FlutterwaveModule, ContractsModule],
+  imports: [ZoraModule, FlutterwaveModule, ContractsModule],
   controllers: [OrdersController],
   providers: [OrderService, OrdersRepository, OrderCleanupService],
   exports: [OrderService],

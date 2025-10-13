@@ -8,11 +8,15 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { OrderService } from './orders.service';
+import { OrderCleanupService } from './order-cleanup.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly orderCleanupService: OrderCleanupService,
+  ) {}
 
   @Post('create')
   @HttpCode(HttpStatus.CREATED)
@@ -87,6 +91,15 @@ export class OrdersController {
         status: order.status,
         releaseTxHash: order.releaseTxHash,
       },
+    };
+  }
+
+  @Post('cleanup-expired')
+  async cleanupExpired() {
+    await this.orderCleanupService.manualCleanup();
+    return {
+      success: true,
+      message: 'Cleanup triggered manually',
     };
   }
 }
