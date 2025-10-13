@@ -3,6 +3,7 @@ import { OrdersRepository } from './orders.repository';
 import { ContractsService } from 'src/contracts/contracts.service';
 import { FlutterwaveService } from 'src/flutterwave/flutterwave.service';
 import { ZoraService } from 'src/zora/zora.service';
+import { TelegramService } from 'src/telegram/telegram.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus } from './entities/order.entity';
 import * as crypto from 'crypto';
@@ -16,6 +17,7 @@ export class OrderService {
     private contractsService: ContractsService,
     private flutterwaveService: FlutterwaveService,
     private zoraService: ZoraService,
+    private telegramService: TelegramService,
   ) {}
 
   async createOrder(createOrderDto: CreateOrderDto): Promise<Order> {
@@ -60,6 +62,9 @@ export class OrderService {
 
       this.orderRepository.save(order);
 
+      // Send Telegram notification for order creation
+      await this.telegramService.notifyOrderCreated(orderId, amountNGN, 'NGN');
+
       this.logger.log(`Order created successfully: ${orderId}`);
       return order;
     } catch (error) {
@@ -96,6 +101,14 @@ export class OrderService {
       order.completedAt = Date.now();
       this.orderRepository.save(order);
 
+      // Send Telegram notification for successful payment
+      await this.telegramService.notifyPaymentSuccess(
+        orderId,
+        order.amountNGN,
+        'NGN',
+        parseFloat(order.usdcAmount)
+      );
+
       this.logger.log(`Order ${orderId} completed successfully`);
 
       return order;
@@ -106,6 +119,9 @@ export class OrderService {
       order.status = OrderStatus.FAILED;
       order.errorMessage = error.message;
       this.orderRepository.save(order);
+
+      // Send Telegram notification for payment failure
+      await this.telegramService.notifyPaymentFailed(orderId, error.message);
 
       throw error;
     }

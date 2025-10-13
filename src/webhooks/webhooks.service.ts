@@ -1,6 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { FlutterwaveService } from 'src/flutterwave/flutterwave.service';
 import { OrderService } from 'src/orders/orders.service';
+import { TelegramService } from 'src/telegram/telegram.service';
 
 @Injectable()
 export class WebhooksService {
@@ -9,6 +10,7 @@ export class WebhooksService {
   constructor(
     private flutterwaveService: FlutterwaveService,
     private orderService: OrderService,
+    private telegramService: TelegramService,
   ) {}
 
   async handleFlutterwaveWebhook(
@@ -17,6 +19,7 @@ export class WebhooksService {
   ): Promise<void> {
     if (!this.flutterwaveService.verifyWebhookSignature(signature)) {
       this.logger.error('Invalid webhook signature');
+      await this.telegramService.notifyServerEvent('Invalid webhook signature received from Flutterwave');
       throw new UnauthorizedException('Invalid signature');
     }
 
@@ -42,6 +45,9 @@ export class WebhooksService {
     } else {
       this.logger.warn(
         'Event not processed - not a successful charge completion',
+      );
+      await this.telegramService.notifyServerEvent(
+        `Unprocessed webhook event: ${event} with status: ${data?.status}`
       );
     }
   }
