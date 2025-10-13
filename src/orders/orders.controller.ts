@@ -8,14 +8,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { OrderService } from './orders.service';
-import { OrderCleanupService } from './order-cleanup.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Controller('orders')
 export class OrdersController {
   constructor(
     private readonly orderService: OrderService,
-    private readonly orderCleanupService: OrderCleanupService,
   ) {}
 
   @Post('create')
@@ -41,6 +39,25 @@ export class OrdersController {
     };
   }
 
+  @Get()
+  async getAllOrders() {
+    const orders = await this.orderService.getAllOrders();
+
+    return {
+      success: true,
+      orders: orders.map((order) => ({
+        orderId: order.orderId,
+        status: order.status,
+        amountNGN: order.amountNGN,
+        usdcAmount: order.usdcAmount,
+        username: order.username,
+        email: order.email,
+        createdAt: new Date(order.createdAt).toISOString(),
+      })),
+      totalOrders: orders.length,
+    };
+  }
+
   @Get(':orderId')
   async getOrder(@Param('orderId') orderId: string) {
     const order = await this.orderService.getOrder(orderId);
@@ -61,25 +78,6 @@ export class OrdersController {
     };
   }
 
-  @Get()
-  async getAllOrders() {
-    const orders = await this.orderService.getAllOrders();
-
-    return {
-      success: true,
-      orders: orders.map((order) => ({
-        orderId: order.orderId,
-        status: order.status,
-        amountNGN: order.amountNGN,
-        usdcAmount: order.usdcAmount,
-        username: order.username,
-        email: order.email,
-        createdAt: new Date(order.createdAt).toISOString(),
-      })),
-      totalOrders: orders.length,
-    };
-  }
-
   @Post(':orderId/verify-payment')
   async verifyPayment(@Param('orderId') orderId: string) {
     const order = await this.orderService.verifyPayment(orderId);
@@ -91,15 +89,6 @@ export class OrdersController {
         status: order.status,
         releaseTxHash: order.releaseTxHash,
       },
-    };
-  }
-
-  @Post('cleanup-expired')
-  async cleanupExpired() {
-    await this.orderCleanupService.manualCleanup();
-    return {
-      success: true,
-      message: 'Cleanup triggered manually',
     };
   }
 }
