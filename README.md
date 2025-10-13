@@ -26,6 +26,7 @@ src/
 │   │   └── create-order.dto.ts # Order creation DTO
 │   ├── entities/
 │   │   └── order.entity.ts   # Order entity definition
+│   ├── order-cleanup.service.ts # Automatic order expiration
 │   ├── orders.controller.ts  # Order management endpoints
 │   ├── orders.module.ts      # Order module
 │   ├── orders.repository.ts  # Order data repository
@@ -83,7 +84,8 @@ src/
 
 ### **✅ Order Management**
 - Complete order lifecycle
-- Status tracking
+- Status tracking (pending, confirmed, completed, failed, expired)
+- Automatic order expiration (15 minutes)
 - Error handling
 - Data persistence
 
@@ -139,6 +141,7 @@ The Telegram bot sends notifications for:
 - 🆕 **Order Created**: New order with payment amount
 - ✅ **Payment Success**: Payment completed, USDC received
 - ❌ **Payment Failed**: Payment failed with error details
+- ⏰ **Order Cancelled**: Order expired due to timeout
 - 🔔 **Server Events**: Security alerts and system events
 
 ## 🎉 **Clean & Production Ready**
