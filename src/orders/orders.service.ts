@@ -26,19 +26,22 @@ export class OrderService {
 
       this.logger.log(`Creating order for ${email}, amount: #${amountNGN}`);
 
-      const recipientAddress =
-        await this.zoraService.getAddressFromUsername(username);
-
       const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
-      const usdcAmountBigInt = this.contractsService.calculateUSDC(amountNGN);
-      const usdcAmountFormatted = (Number(usdcAmountBigInt) / 1e6).toFixed(6);
-      const virtualAccount = await this.flutterwaveService.createVirtualAccount(
-        email,
-        amountNGN,
-        orderId,
-      );
+      // Start all async operations in parallel
+      const [
+        recipientAddress,
+        virtualAccount,
+        usdcAmountBigInt
+      ] = await Promise.all([
+        this.zoraService.getAddressFromUsername(username),
+        this.flutterwaveService.createVirtualAccount(email, amountNGN, orderId),
+        Promise.resolve(this.contractsService.calculateUSDC(amountNGN))
+      ]);
 
+      const usdcAmountFormatted = (Number(usdcAmountBigInt) / 1e6).toFixed(6);
+
+      // Create smart contract order
       const { orderHash, txHash } = await this.contractsService.createOrder(
         orderId,
         recipientAddress,
@@ -62,8 +65,10 @@ export class OrderService {
 
       this.orderRepository.save(order);
 
-      // Send Telegram notification for order creation
-      await this.telegramService.notifyOrderCreated(orderId, amountNGN, 'NGN');
+      // Send Telegram notification asynchronously (don't wait for it)
+      this.telegramService.notifyOrderCreated(orderId, amountNGN, 'NGN').catch(error => {
+        this.logger.error(`Failed to send Telegram notification: ${error.message}`);
+      });
 
       this.logger.log(`Order created successfully: ${orderId}`);
       return order;
