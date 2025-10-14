@@ -1,9 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { ContractsService } from 'src/contracts/contracts.service';
+import { TelegramService } from 'src/telegram/telegram.service';
 
 @Controller('health')
 export class HealthController {
-  constructor(private readonly contractsService: ContractsService) {}
+  constructor(
+    private readonly contractsService: ContractsService,
+    private readonly telegramService: TelegramService,
+  ) {}
 
   @Get()
   async getHealth() {
@@ -40,12 +44,48 @@ export class HealthController {
     }
   }
 
+  @Get('telegram-config')
+  getTelegramConfig() {
+    return {
+      success: true,
+      config: {
+        botToken: process.env.TELEGRAM_BOT_TOKEN ? '***configured***' : 'NOT_SET',
+        chatId: process.env.TELEGRAM_CHAT_ID ? '***configured***' : 'NOT_SET',
+        hasToken: !!process.env.TELEGRAM_BOT_TOKEN,
+        hasChatId: !!process.env.TELEGRAM_CHAT_ID,
+      },
+      timestamp: this.formatWATTime(new Date()),
+    };
+  }
+
+  @Post('telegram-test')
+  async testTelegram() {
+    try {
+      await this.telegramService.notifyServerEvent('Test message from Railway deployment');
+      return {
+        success: true,
+        message: 'Telegram test notification sent',
+        timestamp: this.formatWATTime(new Date()),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        timestamp: this.formatWATTime(new Date()),
+      };
+    }
+  }
+
   @Get('ping')
   ping() {
     return {
       success: true,
       message: 'pong',
       timestamp: this.formatWATTime(new Date()),
+      telegram: {
+        botToken: process.env.TELEGRAM_BOT_TOKEN ? 'configured' : 'NOT_SET',
+        chatId: process.env.TELEGRAM_CHAT_ID ? 'configured' : 'NOT_SET',
+      }
     };
   }
 
