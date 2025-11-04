@@ -5,7 +5,7 @@ import { FlutterwaveService } from 'src/flutterwave/flutterwave.service';
 import { ZoraService } from 'src/zora/zora.service';
 import { TelegramService } from 'src/telegram/telegram.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { Order, OrderStatus } from './entities/order.entity';
+import { Order, OrderStatus, ServiceType } from './entities/order.entity';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -22,19 +22,45 @@ export class OrderService {
 
   async createOrder(createOrderDto: CreateOrderDto): Promise<Order> {
     try {
-      const { username, amountNGN, email } = createOrderDto;
+      const { username, walletAddress, amountNGN, email, serviceType } = createOrderDto;
+
+      // Validate that either username or walletAddress is provided
+      if (!username && !walletAddress) {
+        throw new Error('Either username (for Zora) or walletAddress (for other services) must be provided');
+      }
 
       this.logger.log(`Creating order for ${email}, amount: #${amountNGN}`);
 
       const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
-      // Start all async operations in parallel
+      let recipientAddress: string;
+      let recipientIdentifier: string;
+      let determinedServiceType: ServiceType;
+
+      // Determine if this is a Zora order or wallet address order
+      if (username) {
+        // Zora username provided - use existing logic
+        recipientAddress = await this.zoraService.getAddressFromUsername(username);
+        recipientIdentifier = username;
+        determinedServiceType = serviceType || ServiceType.ZORA;
+      } else if (walletAddress) {
+        // Direct wallet address provided
+        if (!this.isValidEthereumAddress(walletAddress)) {
+          throw new Error('Invalid Ethereum wallet address format');
+        }
+        recipientAddress = walletAddress;
+        recipientIdentifier = walletAddress;
+        // Default to 'wallet' for direct wallet addresses, or 'baseapp' if specified
+        determinedServiceType = serviceType || ServiceType.WALLET;
+      } else {
+        throw new Error('Either username or walletAddress must be provided');
+      }
+
+      // Continue with existing parallel operations
       const [
-        recipientAddress,
         virtualAccount,
         usdcAmountBigInt
       ] = await Promise.all([
-        this.zoraService.getAddressFromUsername(username),
         this.flutterwaveService.createVirtualAccount(email, amountNGN, orderId),
         Promise.resolve(this.contractsService.calculateUSDC(amountNGN))
       ]);
@@ -52,7 +78,8 @@ export class OrderService {
         orderId,
         orderHash,
         recipientAddress,
-        username,
+        username: recipientIdentifier, // Store either username or wallet address
+        serviceType: determinedServiceType, // Store the service type
         amountNGN,
         usdcAmount: usdcAmountFormatted,
         email,
@@ -70,12 +97,17 @@ export class OrderService {
         this.logger.error(`Failed to send Telegram notification: ${error.message}`);
       });
 
-      this.logger.log(`Order created successfully: ${orderId}`);
+      this.logger.log(`Order created successfully: ${orderId} for ${determinedServiceType}`);
       return order;
     } catch (error) {
       this.logger.error(`Failed to create order: ${error.message}`);
       throw error;
     }
+  }
+
+  private isValidEthereumAddress(address: string): boolean {
+    // Basic Ethereum address validation
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
   }
 
   async getOrder(orderId: string): Promise<Order> {

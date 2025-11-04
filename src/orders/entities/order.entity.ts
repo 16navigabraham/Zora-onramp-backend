@@ -8,12 +8,19 @@ export enum OrderStatus {
   EXPIRED = 'expired',
 }
 
+export enum ServiceType {
+  ZORA = 'zora',
+  BASEAPP = 'baseapp',
+  WALLET = 'wallet',
+}
+
 export interface Order {
   orderId: string; // Unique order ID (e.g., ORD-1234567890-ABCD)
   orderHash: string; // Hash from smart contract
 
-  recipientAddress: string; // Ethereum address (Zora wallet)
-  username: string; // Zora username or address input
+  recipientAddress: string; // Ethereum address (Zora wallet or direct wallet)
+  username: string; // Zora username or wallet address input
+  serviceType?: ServiceType; // "zora", "baseapp", "wallet" - identifies the service type
   email: string; // User email
 
   amountNGN: number; // Amount in Nigerian Naira
@@ -40,7 +47,9 @@ export interface Order {
 }
 
 export interface CreateOrderInput {
-  username: string;
+  username?: string; // Zora username (optional)
+  walletAddress?: string; // Direct wallet address (optional)
+  serviceType?: ServiceType; // Service type identifier
   amountNGN: number;
   email: string;
 }
