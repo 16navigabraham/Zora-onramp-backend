@@ -24,11 +24,6 @@ export class OrderService {
     try {
       const { username, walletAddress, amountNGN, email, serviceType } = createOrderDto;
 
-      // Validate that either username or walletAddress is provided
-      if (!username && !walletAddress) {
-        throw new Error('Either username (for Zora) or walletAddress (for other services) must be provided');
-      }
-
       this.logger.log(`Creating order for ${email}, amount: #${amountNGN}`);
 
       const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
