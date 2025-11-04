@@ -6,6 +6,7 @@ import { ZoraService } from 'src/zora/zora.service';
 import { TelegramService } from 'src/telegram/telegram.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus, ServiceType } from './entities/order.entity';
+import { isAddress } from 'ethers';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -38,17 +39,15 @@ export class OrderService {
         recipientAddress = await this.zoraService.getAddressFromUsername(username);
         recipientIdentifier = username;
         determinedServiceType = serviceType || ServiceType.ZORA;
-      } else if (walletAddress) {
-        // Direct wallet address provided
-        if (!this.isValidEthereumAddress(walletAddress)) {
+      } else {
+        // Direct wallet address provided (walletAddress is guaranteed to exist due to DTO validation)
+        if (!this.isValidEthereumAddress(walletAddress!)) {
           throw new Error('Invalid Ethereum wallet address format');
         }
-        recipientAddress = walletAddress;
-        recipientIdentifier = walletAddress;
-        // Default to 'wallet' for direct wallet addresses, or 'baseapp' if specified
+        recipientAddress = walletAddress!;
+        recipientIdentifier = walletAddress!;
+        // Default to 'wallet' for direct wallet addresses, or use specified serviceType
         determinedServiceType = serviceType || ServiceType.WALLET;
-      } else {
-        throw new Error('Either username or walletAddress must be provided');
       }
 
       // Continue with existing parallel operations
@@ -101,8 +100,9 @@ export class OrderService {
   }
 
   private isValidEthereumAddress(address: string): boolean {
-    // Basic Ethereum address validation
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
+    // Use ethers.js isAddress() which validates both format and EIP-55 checksum
+    // This prevents addresses with typos and ensures proper checksum validation
+    return isAddress(address);
   }
 
   async getOrder(orderId: string): Promise<Order> {
