@@ -37,7 +37,7 @@ export class CreateOrderDto {
 
     @IsNumber()
     @Min(200, { message: 'Minimum amount is 200 NGN'})
-    @Max(1600, { message: 'Maximum amount is 1600 NGN'})
+    @Max(1670, { message: 'Maximum amount is 1600 NGN + 70 fee'})
     amountNGN: number;
 
     @IsEmail()
