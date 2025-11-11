@@ -107,6 +107,27 @@ export class TelegramService {
     }
   }
 
+  /**
+   * Public method to send a message to an arbitrary chat ID.
+   */
+  async sendRawMessageToChat(chatId: string, message: string, parseMode = 'Markdown'): Promise<void> {
+    if (!this.botToken) {
+      this.logger.warn('Telegram bot not configured, skipping sendRawMessageToChat');
+      return;
+    }
+
+    const response = await axios.post(`${this.baseUrl}/sendMessage`, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: parseMode,
+      disable_web_page_preview: true,
+    });
+
+    if (!response.data.ok) {
+      throw new Error(`Telegram API error: ${response.data.description}`);
+    }
+  }
+
   // Convenience methods for specific notification types
   async notifyOrderCreated(orderId: string, amount: number, currency: string): Promise<void> {
     await this.sendNotification({

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from "@nestjs/config";
 import configuration from "./config/configuration";
 import { OrdersModule } from "./orders/orders.module";
@@ -10,6 +11,8 @@ import { TelegramModule } from "./telegram/telegram.module";
 import { HealthController } from "./health/health.controller";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { BalanceCheckService } from './maintenance/balance-check.service';
+import { BalanceConfigController } from './maintenance/balance-config.controller';
 
 @Module({
   imports: [
@@ -17,6 +20,7 @@ import { AppService } from "./app.service";
       isGlobal: true,
       load: [configuration],
     }),
+    ScheduleModule.forRoot(),
     ZoraModule,
     FlutterwaveModule,
     ContractsModule,
@@ -24,7 +28,7 @@ import { AppService } from "./app.service";
     WebhookModule,
     TelegramModule
   ],
-  controllers: [AppController, HealthController],
-  providers: [AppService],
+  controllers: [AppController, HealthController, BalanceConfigController],
+  providers: [AppService, BalanceCheckService],
 })
 export class AppModule {}

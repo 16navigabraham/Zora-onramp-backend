@@ -1,12 +1,14 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { ContractsService } from 'src/contracts/contracts.service';
 import { TelegramService } from 'src/telegram/telegram.service';
+import { BalanceCheckService } from 'src/maintenance/balance-check.service';
 
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly contractsService: ContractsService,
     private readonly telegramService: TelegramService,
+    private readonly balanceCheckService: BalanceCheckService,
   ) {}
 
   @Get()
@@ -15,6 +17,8 @@ export class HealthController {
       const balance = await this.contractsService.getContractBalance();
       const network = await this.contractsService.getNetworkInfo();
 
+      const status = this.balanceCheckService.getStatus();
+
       return {
         success: true,
         status: 'operational',
@@ -22,6 +26,10 @@ export class HealthController {
         contract: {
           address: process.env.CONTRACT_ADDRESS,
           userBalance: balance,
+          monitoring: {
+            lastAlertAt: status.lastAlertAt,
+            alerted: status.alerted,
+          },
         },
         network: {
           name: network.name,
