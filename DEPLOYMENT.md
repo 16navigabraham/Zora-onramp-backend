@@ -53,9 +53,18 @@ git push origin AbNAVIG
 
 1. **In Render Dashboard**, go to your web service settings:
    - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `cd /opt/render/project/src && node dist/main.js`
+   - **Start Command**: Try these in order:
+     - First try: `node dist/src/main.js`
+     - If that fails: `node dist/main.js`
+     - If that fails: `cd /opt/render/project/src && node dist/src/main.js`
 
-2. **Important**: The Start Command must `cd` to the project directory first because Render's working directory may differ from where the dist folder is located.
+2. **Troubleshooting the Start Command**:
+   - If you get "Cannot find module" error, use Render Shell to find the file:
+     ```bash
+     # In Render Shell, run:
+     find /opt/render/project -name "main.js" -type f
+     ```
+   - Then use the exact path shown in the Start Command
 
 3. **Prisma Client Generation**:
    - Prisma client is automatically generated via the `postbuild` script after `npm run build`
