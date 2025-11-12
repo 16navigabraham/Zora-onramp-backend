@@ -24,8 +24,11 @@ export class TelegramController {
         return { ok: true };
       }
 
-      // Log incoming command (helps with debugging)
-      this.logger.log(`Telegram command from chat ${chatId}: ${message}`);
+      // Log incoming command (mask chat ID for privacy)
+      const maskedChatId = chatId.length > 4 
+        ? `${chatId.slice(0, 2)}***${chatId.slice(-2)}`
+        : '***';
+      this.logger.log(`Telegram command received: ${message.split(' ')[0]} from chat ${maskedChatId}`);
 
       // Handle /balance command
       if (message.startsWith('/balance')) {
@@ -57,7 +60,7 @@ export class TelegramController {
             `� ${new Date().toLocaleString('en-NG', { timeZone: 'Africa/Lagos' })} WAT`;
 
           await this.telegramService.sendRawMessageToChat(chatId, reply, 'Markdown');
-          this.logger.log(`Sent /balance response to chat ${chatId}`);
+          this.logger.log(`Sent /balance response to chat ${maskedChatId}`);
         } catch (err) {
           this.logger.error(`Failed to fetch balance data: ${err.message}`);
           await this.telegramService.sendRawMessageToChat(
