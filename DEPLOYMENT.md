@@ -53,9 +53,9 @@ git push origin AbNAVIG
 
 1. **In Render Dashboard**, go to your web service settings:
    - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm run start` (or `node dist/main`)
+   - **Start Command**: `cd /opt/render/project/src && node dist/main.js`
 
-2. **Important**: The `start` script has been updated to run in production mode (`node dist/main`) instead of development mode to avoid memory issues.
+2. **Important**: The Start Command must `cd` to the project directory first because Render's working directory may differ from where the dist folder is located.
 
 3. **Prisma Client Generation**:
    - Prisma client is automatically generated via the `postbuild` script after `npm run build`
