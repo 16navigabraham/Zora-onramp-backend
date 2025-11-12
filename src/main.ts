@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { TelegramService } from './telegram/telegram.service';
+import { ContractsService } from './contracts/contracts.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,20 +34,30 @@ async function bootstrap() {
   try {
     // Validate Telegram configuration early so deploy logs show helpful warnings
     try {
-      const telegramService = app.get('TelegramService');
+      const telegramService = app.get(TelegramService);
       if (telegramService && typeof telegramService.validateConfig === 'function') {
         telegramService.validateConfig();
       }
-    } catch {}
-    const contractsService = app.get('ContractsService');
-    if (contractsService && typeof contractsService.ready === 'function') {
-      const readyPromise = contractsService.ready();
-      const timeout = new Promise((resolve) => setTimeout(resolve, 30000)); // 30s
-      const race = await Promise.race([readyPromise.then(() => 'ready'), timeout.then(() => 'timeout')]);
-      if (race === 'timeout') {
-        const logger = new Logger('Bootstrap');
-        logger.warn('ContractsService readiness timed out after 30s; starting server anyway.');
+    } catch (e) {
+      // If TelegramService isn't available for some reason, log and continue
+      const logger = new Logger('Bootstrap');
+      logger.debug('TelegramService not available during bootstrap validation.');
+    }
+
+    try {
+      const contractsService = app.get(ContractsService);
+      if (contractsService && typeof contractsService.ready === 'function') {
+        const readyPromise = contractsService.ready();
+        const timeout = new Promise((resolve) => setTimeout(resolve, 30000)); // 30s
+        const race = await Promise.race([readyPromise.then(() => 'ready'), timeout.then(() => 'timeout')]);
+        if (race === 'timeout') {
+          const logger = new Logger('Bootstrap');
+          logger.warn('ContractsService readiness timed out after 30s; starting server anyway.');
+        }
       }
+    } catch (e) {
+      const logger = new Logger('Bootstrap');
+      logger.debug('ContractsService not available during bootstrap readiness check.');
     }
   } catch (err) {
     const logger = new Logger('Bootstrap');
