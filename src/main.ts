@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { TelegramService } from './telegram/telegram.service';
 import { ContractsService } from './contracts/contracts.service';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,6 +15,16 @@ async function bootstrap() {
     origin: configService.get('cors.origin'),
     credentials: configService.get('cors.credentials'),
   });
+
+  // Configure body parser to capture raw body for webhook signature verification
+  app.use(
+    bodyParser.json({
+      verify: (req: any, res, buf) => {
+        // Attach raw body to request for webhook endpoints
+        req.rawBody = buf;
+      },
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

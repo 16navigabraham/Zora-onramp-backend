@@ -6,8 +6,11 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  Req,
 } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
+import { Request } from 'express';
 
 @Controller('webhooks')
 export class WebhooksController {
@@ -18,15 +21,19 @@ export class WebhooksController {
   @Post('flutterwave')
   @HttpCode(HttpStatus.OK)
   async handleFlutterwaveWebhook(
-    @Headers('verif-hash') signature: string,
+    @Headers('flutterwave-signature') signature: string,
     @Body() payload: any,
+    @Req() req: RawBodyRequest<Request>,
   ) {
     this.logger.log('==============================================');
     this.logger.log('Webhook received from Flutterwave');
     this.logger.log('==============================================');
     this.logger.debug('Payload: ', JSON.stringify(payload, null, 2));
 
-    await this.webhooksService.handleFlutterwaveWebhook(signature, payload);
+    // Get raw body for signature verification
+    const rawBody = req.rawBody ? req.rawBody.toString() : JSON.stringify(payload);
+
+    await this.webhooksService.handleFlutterwaveWebhook(signature, payload, rawBody);
 
     return {
       success: true,

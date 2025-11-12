@@ -16,8 +16,9 @@ export class WebhooksService {
   async handleFlutterwaveWebhook(
     signature: string,
     payload: any,
+    rawBody: string,
   ): Promise<void> {
-    if (!this.flutterwaveService.verifyWebhookSignature(signature)) {
+    if (!this.flutterwaveService.verifyWebhookSignature(signature, rawBody)) {
       this.logger.error('Invalid webhook signature');
       await this.telegramService.notifyServerEvent('Invalid webhook signature received from Flutterwave');
       throw new UnauthorizedException('Invalid signature');

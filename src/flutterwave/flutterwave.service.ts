@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import * as crypto from 'crypto';
 
 export interface VirtualAccount {
   accountNumber: string;
@@ -86,10 +87,35 @@ export class FlutterwaveService {
     }
   }
 
-  verifyWebhookSignature(signature: string): boolean {
-    const webhookHash = this.configService.get<string>(
-      'flutterwave.webhookHash',
-    );
-    return signature === webhookHash;
+  verifyWebhookSignature(signature: string, rawBody: string): boolean {
+    const secretHash = this.configService.get<string>('flutterwave.webhookHash');
+    
+    if (!secretHash) {
+      this.logger.error('FLUTTERWAVE_SECRET_HASH not configured');
+      return false;
+    }
+
+    if (!signature) {
+      this.logger.error('No signature provided in webhook headers');
+      return false;
+    }
+
+    // Hash the raw body using HMAC-SHA256 as per Flutterwave docs
+    const hash = crypto
+      .createHmac('sha256', secretHash)
+      .update(rawBody)
+      .digest('hex');
+
+    const isValid = hash === signature;
+    
+    if (!isValid) {
+      this.logger.warn('Webhook signature mismatch');
+      this.logger.debug(`Expected: ${hash}`);
+      this.logger.debug(`Received: ${signature}`);
+    } else {
+      this.logger.log('Webhook signature verified successfully');
+    }
+
+    return isValid;
   }
 }
