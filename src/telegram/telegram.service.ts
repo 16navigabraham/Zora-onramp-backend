@@ -22,7 +22,7 @@ export class TelegramService {
 
   constructor(private configService: ConfigService) {
     this.botToken = this.configService.get<string>('telegram.botToken') || '';
-    this.chatId = this.configService.get<string>('telegram.chatId') || '';
+    this.chatId = (this.configService.get<string>('telegram.chatId') || '').trim();
     this.baseUrl = `https://api.telegram.org/bot${this.botToken}`;
   }
 
@@ -46,9 +46,10 @@ export class TelegramService {
       issues.push('TELEGRAM_CHAT_ID is not set');
     } else {
       // Accept numeric ids (including negative), or @username
+      // More lenient: just check it's not empty after trim
       const chatPattern = /^(-?\d+|@.+)$/;
-      if (!chatPattern.test(this.chatId)) {
-        issues.push('TELEGRAM_CHAT_ID does not look like a numeric id or @username');
+      if (!chatPattern.test(this.chatId.trim())) {
+        issues.push(`TELEGRAM_CHAT_ID does not look like a numeric id or @username (got: "${this.chatId.substring(0, 20)}...")`);
       }
     }
 
