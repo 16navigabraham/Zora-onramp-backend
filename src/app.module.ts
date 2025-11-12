@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import configuration from "./config/configuration";
+import { PrismaModule } from "./prisma/prisma.module";
 import { OrdersModule } from "./orders/orders.module";
 import { ZoraModule } from "./zora/zora.module";
 import { FlutterwaveModule } from "./flutterwave/flutterwave.module";
@@ -19,6 +20,7 @@ import { BalanceConfigController } from './maintenance/balance-config.controller
       isGlobal: true,
       load: [configuration],
     }),
+    PrismaModule,
     ZoraModule,
     FlutterwaveModule,
     ContractsModule,

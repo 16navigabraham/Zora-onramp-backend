@@ -84,7 +84,7 @@ export class OrderService {
         createTxHash: txHash,
       };
 
-      this.orderRepository.save(order);
+      await this.orderRepository.save(order);
 
       this.logger.log(`Order created successfully: ${orderId} for ${determinedServiceType}`);
       return order;
@@ -101,7 +101,7 @@ export class OrderService {
   }
 
   async getOrder(orderId: string): Promise<Order> {
-    const order = this.orderRepository.findById(orderId);
+    const order = await this.orderRepository.findById(orderId);
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
@@ -112,24 +112,24 @@ export class OrderService {
   }
 
   async getAllOrders(): Promise<Order[]> {
-    return this.orderRepository.findAll();
+    return await this.orderRepository.findAll();
   }
 
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
-    const order = this.orderRepository.findById(orderId);
+    const order = await this.orderRepository.findById(orderId);
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
     
     order.status = status;
-    this.orderRepository.save(order);
+    await this.orderRepository.save(order);
     this.logger.log(`Order ${orderId} status updated to ${status}`);
     
     return order;
   }
 
   async processPayment(orderId: string): Promise<Order> {
-    const order = this.orderRepository.findById(orderId);
+    const order = await this.orderRepository.findById(orderId);
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
@@ -145,7 +145,7 @@ export class OrderService {
       this.logger.log(`Processing payment for order ${orderId}`);
 
       order.status = OrderStatus.CONFIRMED;
-      this.orderRepository.save(order);
+      await this.orderRepository.save(order);
 
       const releaseTxHash = await this.contractsService.releaseUSDC(
         order.orderHash,
@@ -154,7 +154,7 @@ export class OrderService {
       order.status = OrderStatus.COMPLETED;
       order.releaseTxHash = releaseTxHash;
       order.completedAt = Date.now();
-      this.orderRepository.save(order);
+      await this.orderRepository.save(order);
 
       // Send Telegram notification for successful payment with rich details
       await this.telegramService.notifyPaymentSuccess(
@@ -176,7 +176,7 @@ export class OrderService {
       );
       order.status = OrderStatus.FAILED;
       order.errorMessage = error.message;
-      this.orderRepository.save(order);
+      await this.orderRepository.save(order);
 
       // Send Telegram notification for payment failure with details
       await this.telegramService.notifyPaymentFailed(
@@ -193,7 +193,7 @@ export class OrderService {
 
 
   async verifyPayment(orderId: string): Promise<Order> {
-    const order = this.orderRepository.findById(orderId);
+    const order = await this.orderRepository.findById(orderId);
 
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
@@ -227,8 +227,8 @@ export class OrderService {
     this.logger.log('Starting manual reconciliation of pending/expired orders');
 
     // Check both PENDING and EXPIRED orders (user may have paid but order timed out)
-    const pendingOrders = this.orderRepository.findByStatus(OrderStatus.PENDING);
-    const expiredOrders = this.orderRepository.findByStatus(OrderStatus.EXPIRED);
+    const pendingOrders = await this.orderRepository.findByStatus(OrderStatus.PENDING);
+    const expiredOrders = await this.orderRepository.findByStatus(OrderStatus.EXPIRED);
     const ordersToCheck = [...pendingOrders, ...expiredOrders];
 
     const results: Array<{ orderId: string; status: string; message: string }> = [];
@@ -249,7 +249,7 @@ export class OrderService {
           // Reset status to PENDING if it was EXPIRED, so processPayment can handle it
           if (order.status === OrderStatus.EXPIRED) {
             order.status = OrderStatus.PENDING;
-            this.orderRepository.save(order);
+            await this.orderRepository.save(order);
           }
           
           await this.processPayment(order.orderId);

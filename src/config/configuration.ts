@@ -1,6 +1,10 @@
 export default () => ({
     port: parseInt(process.env.PORT || '3002', 10),
 
+    database: {
+        url: process.env.DATABASE_URL,
+    },
+
     flutterwave: {
         publicKey: process.env.FLUTTERWAVE_PUBLIC_KEY,
         secretKey: process.env.FLUTTERWAVE_SECRET_KEY,

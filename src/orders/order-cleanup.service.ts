@@ -23,7 +23,7 @@ export class OrderCleanupService implements OnModuleInit {
 
   async handleExpiredOrders() {
     try {
-      const expiredOrders = this.orderRepository.findExpired();
+      const expiredOrders = await this.orderRepository.findExpired();
       
       if (expiredOrders.length === 0) {
         return;
@@ -34,7 +34,7 @@ export class OrderCleanupService implements OnModuleInit {
       for (const order of expiredOrders) {
         // Mark order as expired
         order.status = OrderStatus.EXPIRED;
-        this.orderRepository.save(order);
+        await this.orderRepository.save(order);
 
         // Send Telegram notification for order cancellation with details
         await this.telegramService.notifyOrderCancelled(

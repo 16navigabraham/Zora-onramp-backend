@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id                String   @id @default(uuid())
+  orderId           String   @unique
+  orderHash         String
+  
+  recipientAddress  String
+  username          String?
+  serviceType       String?
+  email             String?
+  
+  amountNGN         Float
+  usdcAmount        String
+  
+  // Virtual Account as JSON
+  virtualAccount    Json
+  
+  status            String
+  createdAt         BigInt
+  expiresAt         BigInt
+  completedAt       BigInt?
+  
+  createTxHash      String?
+  releaseTxHash     String?
+  txHash            String?
+  
+  errorMessage      String?
+  
+  // Metadata as JSON
+  metadata          Json?
+  
+  // Indexes for performance
+  @@index([status])
+  @@index([email])
+  @@index([recipientAddress])
+  @@index([createdAt])
+  @@map("orders")
+}
+

@@ -1,107 +1,216 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { Order } from './entities/order.entity';
 
 /**
  * OrdersRepository
- * Handles data persistence for orders
- * Currently using in-memory Map - replace with database in production (e.g., TypeORM, Prisma)
+ * Handles data persistence for orders using PostgreSQL via Prisma ORM
  */
 @Injectable()
 export class OrdersRepository {
-  // In-memory storage (replace with database in production)
-  private orders = new Map<string, Order>();
+  constructor(private prisma: PrismaService) {}
 
-  save(order: Order): Order {
-    this.orders.set(order.orderId, order);
-    return order;
+  async save(order: Order): Promise<Order> {
+    const data: any = {
+      orderId: order.orderId,
+      orderHash: order.orderHash,
+      recipientAddress: order.recipientAddress,
+      amountNGN: order.amountNGN,
+      usdcAmount: order.usdcAmount,
+      virtualAccount: order.virtualAccount as any,
+      status: order.status,
+      createdAt: BigInt(order.createdAt),
+      expiresAt: BigInt(order.expiresAt),
+      completedAt: order.completedAt ? BigInt(order.completedAt) : null,
+    };
+
+    // Add optional fields if they exist
+    if (order.email !== undefined) data.email = order.email;
+    if (order.username !== undefined) data.username = order.username;
+    if (order.serviceType !== undefined) data.serviceType = order.serviceType;
+    if (order.createTxHash !== undefined) data.createTxHash = order.createTxHash;
+    if (order.releaseTxHash !== undefined) data.releaseTxHash = order.releaseTxHash;
+    if (order.errorMessage !== undefined) data.errorMessage = order.errorMessage;
+    if (order.metadata !== undefined) data.metadata = order.metadata as any;
+
+    const saved = await this.prisma.order.upsert({
+      where: { orderId: order.orderId },
+      update: data,
+      create: data,
+    });
+
+    return this.mapToOrder(saved);
   }
 
-  findById(orderId: string): Order | undefined {
-    return this.orders.get(orderId);
+  async findById(orderId: string): Promise<Order | undefined> {
+    const order = await this.prisma.order.findUnique({
+      where: { orderId },
+    });
+    return order ? this.mapToOrder(order) : undefined;
   }
 
-  findByOrderHash(orderHash: string): Order | undefined {
-    return Array.from(this.orders.values()).find(
-      (order) => order.orderHash === orderHash,
-    );
+  async findByOrderHash(orderHash: string): Promise<Order | undefined> {
+    const order = await this.prisma.order.findFirst({
+      where: { orderHash },
+    });
+    return order ? this.mapToOrder(order) : undefined;
   }
 
-  findAll(): Order[] {
-    return Array.from(this.orders.values());
+  async findAll(): Promise<Order[]> {
+    const orders = await this.prisma.order.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return orders.map((order) => this.mapToOrder(order));
   }
 
-  findByEmail(email: string): Order[] {
-    return Array.from(this.orders.values()).filter(
-      (order) => order.email === email,
-    );
+  async findByEmail(email: string): Promise<Order[]> {
+    const orders = await this.prisma.order.findMany({
+      where: { email },
+      orderBy: { createdAt: 'desc' },
+    });
+    return orders.map((order) => this.mapToOrder(order));
   }
 
-  findByStatus(status: string): Order[] {
-    return Array.from(this.orders.values()).filter(
-      (order) => order.status === status,
-    );
+  async findByStatus(status: string): Promise<Order[]> {
+    const orders = await this.prisma.order.findMany({
+      where: { status },
+      orderBy: { createdAt: 'desc' },
+    });
+    return orders.map((order) => this.mapToOrder(order));
   }
 
-  findByRecipientAddress(address: string): Order[] {
-    return Array.from(this.orders.values()).filter(
-      (order) => order.recipientAddress.toLowerCase() === address.toLowerCase(),
-    );
+  async findByRecipientAddress(address: string): Promise<Order[]> {
+    const orders = await this.prisma.order.findMany({
+      where: {
+        recipientAddress: {
+          equals: address,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return orders.map((order) => this.mapToOrder(order));
   }
 
-  update(orderId: string, updates: Partial<Order>): Order | undefined {
-    const order = this.orders.get(orderId);
-    if (!order) return undefined;
-
-    const updatedOrder = { ...order, ...updates };
-    this.orders.set(orderId, updatedOrder);
-    return updatedOrder;
-  }
-
-  delete(orderId: string): boolean {
-    return this.orders.delete(orderId);
-  }
-
-  count(): number {
-    return this.orders.size;
-  }
-
-  countByStatus(status: string): number {
-    return this.findByStatus(status).length;
-  }
-
-  findAfterTimestamp(timestamp: number): Order[] {
-    return Array.from(this.orders.values()).filter(
-      (order) => order.createdAt > timestamp,
-    );
-  }
-
-  findExpired(): Order[] {
-    const now = Date.now();
-    return Array.from(this.orders.values()).filter(
-      (order) => {
-        // Handle both Unix timestamp and ISO string formats
-        const expiresAt = typeof order.expiresAt === 'string' 
-          ? new Date(order.expiresAt).getTime() 
-          : order.expiresAt;
-        return expiresAt < now && order.status === 'pending';
+  async update(orderId: string, updates: Partial<Order>): Promise<Order | undefined> {
+    try {
+      const updateData: any = {};
+      
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.createTxHash !== undefined) updateData.createTxHash = updates.createTxHash;
+      if (updates.releaseTxHash !== undefined) updateData.releaseTxHash = updates.releaseTxHash;
+      if (updates.errorMessage !== undefined) updateData.errorMessage = updates.errorMessage;
+      if (updates.completedAt !== undefined) {
+        updateData.completedAt = updates.completedAt ? BigInt(updates.completedAt) : null;
       }
-    );
+      if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
+      if (updates.virtualAccount !== undefined) updateData.virtualAccount = updates.virtualAccount;
+
+      const updated = await this.prisma.order.update({
+        where: { orderId },
+        data: updateData,
+      });
+
+      return this.mapToOrder(updated);
+    } catch (error) {
+      return undefined;
+    }
   }
 
-  clear(): void {
-    this.orders.clear();
+  async delete(orderId: string): Promise<boolean> {
+    try {
+      await this.prisma.order.delete({
+        where: { orderId },
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
-  getStatistics() {
-    const orders = this.findAll();
+  async count(): Promise<number> {
+    return this.prisma.order.count();
+  }
+
+  async countByStatus(status: string): Promise<number> {
+    return this.prisma.order.count({
+      where: { status },
+    });
+  }
+
+  async findAfterTimestamp(timestamp: number): Promise<Order[]> {
+    const orders = await this.prisma.order.findMany({
+      where: {
+        createdAt: {
+          gt: BigInt(timestamp),
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return orders.map((order) => this.mapToOrder(order));
+  }
+
+  async findExpired(): Promise<Order[]> {
+    const now = BigInt(Date.now());
+    const orders = await this.prisma.order.findMany({
+      where: {
+        status: 'pending',
+        expiresAt: {
+          lt: now,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return orders.map((order) => this.mapToOrder(order));
+  }
+
+  async clear(): Promise<void> {
+    await this.prisma.order.deleteMany();
+  }
+
+  async getStatistics() {
+    const [total, pending, confirmed, completed, failed, orders] = await Promise.all([
+      this.prisma.order.count(),
+      this.prisma.order.count({ where: { status: 'pending' } }),
+      this.prisma.order.count({ where: { status: 'confirmed' } }),
+      this.prisma.order.count({ where: { status: 'completed' } }),
+      this.prisma.order.count({ where: { status: 'failed' } }),
+      this.prisma.order.findMany({ select: { amountNGN: true } }),
+    ]);
 
     return {
-      total: orders.length,
-      pending: this.countByStatus('pending'),
-      confirmed: this.countByStatus('confirmed'),
-      completed: this.countByStatus('completed'),
-      failed: this.countByStatus('failed'),
+      total,
+      pending,
+      confirmed,
+      completed,
+      failed,
       totalVolume: orders.reduce((sum, order) => sum + order.amountNGN, 0),
+    };
+  }
+
+  /**
+   * Maps Prisma Order model to application Order entity
+   * Converts BigInt timestamps back to numbers
+   */
+  private mapToOrder(prismaOrder: any): Order {
+    return {
+      orderId: prismaOrder.orderId,
+      orderHash: prismaOrder.orderHash,
+      recipientAddress: prismaOrder.recipientAddress,
+      amountNGN: prismaOrder.amountNGN,
+      usdcAmount: prismaOrder.usdcAmount,
+      virtualAccount: prismaOrder.virtualAccount,
+      status: prismaOrder.status,
+      createdAt: Number(prismaOrder.createdAt),
+      expiresAt: Number(prismaOrder.expiresAt),
+      completedAt: prismaOrder.completedAt ? Number(prismaOrder.completedAt) : undefined,
+      email: prismaOrder.email,
+      username: prismaOrder.username,
+      serviceType: prismaOrder.serviceType,
+      createTxHash: prismaOrder.createTxHash,
+      releaseTxHash: prismaOrder.releaseTxHash,
+      errorMessage: prismaOrder.errorMessage,
+      metadata: prismaOrder.metadata,
     };
   }
 }
