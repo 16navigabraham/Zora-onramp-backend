@@ -30,6 +30,13 @@ async function bootstrap() {
   // Wait for ContractsService to signal readiness before starting the server.
   // Use a bounded timeout so startup doesn't hang indefinitely in prod.
   try {
+    // Validate Telegram configuration early so deploy logs show helpful warnings
+    try {
+      const telegramService = app.get('TelegramService');
+      if (telegramService && typeof telegramService.validateConfig === 'function') {
+        telegramService.validateConfig();
+      }
+    } catch {}
     const contractsService = app.get('ContractsService');
     if (contractsService && typeof contractsService.ready === 'function') {
       const readyPromise = contractsService.ready();
