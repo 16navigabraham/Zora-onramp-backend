@@ -52,12 +52,14 @@ git push origin AbNAVIG
 ### 4. Update Build & Deploy Configuration
 
 1. **In Render Dashboard**, go to your web service settings:
-   - **Build Command**: Should be `npm install && npm run build`
-   - **Start Command**: Should be `npm run start:prod`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm run start` (or `node dist/main`)
 
-2. **Add Deploy Hook for Migrations**:
-   - Since Render doesn't have a built-in "pre-deploy" hook, migrations will run automatically on first database connection
-   - The PrismaService in `src/prisma/prisma.service.ts` handles connection on startup
+2. **Important**: The `start` script has been updated to run in production mode (`node dist/main`) instead of development mode to avoid memory issues.
+
+3. **Prisma Client Generation**:
+   - Prisma client is automatically generated via the `postbuild` script after `npm run build`
+   - No additional configuration needed
 
 ### 5. Deploy the Application
 
@@ -201,6 +203,11 @@ Now that your backend has persistent storage, configure the webhook for instant 
 - **Error**: `Prisma Client not generated`
   - **Fix**: Ensure `postbuild` script in package.json runs `prisma generate`
   - **Fix**: Check that `prisma` is in `dependencies` (not `devDependencies`)
+
+- **Error**: `JavaScript heap out of memory` during startup
+  - **Fix**: Ensure Start Command is `npm run start` (not `nest start`)
+  - **Fix**: The `start` script should run `node dist/main` (production mode)
+  - **Fix**: If still occurring, check Render plan - free tier has 512MB RAM limit
 
 ### Runtime Issues
 - **Error**: `No DATABASE_URL environment variable`
