@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+  "module": "NodeNext",
+  "moduleResolution": "NodeNext",
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
@@ -10,10 +10,13 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "ES2023",
+  "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+  // Suppress deprecation warnings until a proper migration to TS 7.0 is done.
+  // See https://aka.ms/ts6 for migration guidance.
+  "ignoreDeprecations": "6.0",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
