@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
@@ -29,10 +29,10 @@ async function bootstrap() {
 
   await app.listen(port);
 
-  const logger = app.get('Logger') || console;
-  logger.log && logger.log('Zora Onramp Server Started');
+  const logger = new Logger('Bootstrap');
+  logger.log('Zora Onramp Server Started');
   // Avoid printing potentially sensitive environment-derived URLs in logs
-  logger.log && logger.log(`API prefix: /api`);
+  logger.log('API prefix: /api');
 }
 
 bootstrap();

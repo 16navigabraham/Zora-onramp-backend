@@ -53,8 +53,27 @@ export class BalanceCheckService implements OnModuleInit {
     this.logger.log(`Starting balance check every ${this.checkIntervalMinutes} minutes. Threshold: ${this.lowThresholdUsdc} USDC`);
     const ms = this.checkIntervalMinutes * 60 * 1000;
     this.intervalHandle = setInterval(() => this.checkBalance(), ms);
-    // Run an immediate check at startup
-    this.checkBalance().catch(err => this.logger.error(`Initial balance check failed: ${err.message}`));
+    // Run an immediate check at startup. The ContractsService may not be
+    // fully initialized before this provider's onModuleInit runs, so retry a
+    // few times with backoff to avoid 'getBalance' being undefined.
+    (async () => {
+      const maxAttempts = 5;
+      let attempt = 0;
+      while (attempt < maxAttempts) {
+        try {
+          await this.checkBalance();
+          break;
+        } catch (err: any) {
+          attempt++;
+          this.logger.warn(`Initial balance check attempt ${attempt} failed: ${err?.message || err}. Retrying...`);
+          // exponential backoff
+          await new Promise(r => setTimeout(r, 500 * attempt));
+        }
+      }
+      if (attempt >= maxAttempts) {
+        this.logger.error('Initial balance check failed after retries');
+      }
+    })();
   }
 
   private async checkBalance() {
