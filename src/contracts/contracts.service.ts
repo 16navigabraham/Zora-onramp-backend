@@ -44,8 +44,11 @@ export class ContractsService implements OnModuleInit {
       this.wallet,
     );
 
-    this.logger.log(`Contract initialized: ${contractAddress}`);
-    this.logger.log(`Operator address: ${this.wallet.address}`);
+  this.logger.log(`Contract initialized: ${contractAddress}`);
+  // Avoid logging full operator address in logs. Mask middle portion.
+  const addr = this.wallet.address || '';
+  const masked = addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'unknown';
+  this.logger.log(`Operator address: ${masked}`);
   }
 
   async createOrder(

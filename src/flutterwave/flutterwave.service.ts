@@ -56,8 +56,9 @@ export class FlutterwaveService {
       };
     } catch (error) {
       this.logger.error(`Failed to create virtual account: ${error.message}`);
-      if (error.response) {
-        this.logger.error(JSON.stringify(error.response.data));
+      // Do not log full error.response data (may contain sensitive info). Log status/code only.
+      if (error.response && error.response.status) {
+        this.logger.error(`Flutterwave API responded with status ${error.response.status}`);
       }
       throw new Error('Failed to create virtual account');
     }
@@ -80,7 +81,7 @@ export class FlutterwaveService {
 
       return response.data.data;
     } catch (error) {
-      this.logger.error('Failed to verify transaction: ', error.message);
+      this.logger.error(`Failed to verify transaction: ${error.message}`);
       throw error;
     }
   }

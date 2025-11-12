@@ -31,7 +31,12 @@ export class TelegramController {
 
         const lastAlert = status.lastAlertAt ? new Date(status.lastAlertAt).toISOString() : 'never';
 
-        const reply = `🔎 Contract balance\n• Address: ${process.env.CONTRACT_ADDRESS || 'unknown'}\n• Balance: ${balance} USDC\n• Network: ${network.name} (chainId ${network.chainId})\n• Last low-balance alert: ${lastAlert} (active: ${status.alerted})`;
+        const contractAddress = process.env.CONTRACT_ADDRESS || 'unknown';
+        const maskedAddress = contractAddress && contractAddress !== 'unknown'
+          ? `${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}`
+          : 'unknown';
+
+        const reply = `🔎 Contract balance\n• Address: ${maskedAddress}\n• Balance: ${balance} USDC\n• Network: ${network.name} (chainId ${network.chainId})\n• Last low-balance alert: ${lastAlert} (active: ${status.alerted})`;
 
         await this.telegramService.sendRawMessageToChat(chatId, reply);
       }

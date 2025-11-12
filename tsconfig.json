@@ -13,11 +13,16 @@
   "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
-  // Note: 'ignoreDeprecations' was removed because some TypeScript versions in CI
-  // do not accept it; migrate baseUrl usage before upgrading to TS 7.0.
+  // Note: 'baseUrl' was removed because it's deprecated for TypeScript 7.0+.
+  // The editor may still show a diagnostic about this. To resolve that you
+  // can either upgrade the workspace TypeScript to a version that supports
+  // the 'ignoreDeprecations' option, or accept this warning until you
+  // migrate imports away from baseUrl usage. We intentionally avoid setting
+  // 'ignoreDeprecations' here because the project's TypeScript version
+  // (used by CI and local tooling) does not accept that option and it
+  // causes TS5103 errors.
     "incremental": true,
-    "skipLibCheck": true,
+  "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,

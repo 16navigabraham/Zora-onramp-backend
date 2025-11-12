@@ -22,10 +22,15 @@ export class WebhooksController {
     @Headers('verif-hash') signature: string,
     @Body() payload: any,
   ) {
-    this.logger.log('==============================================');
     this.logger.log('Webhook received from Flutterwave');
-    this.logger.log('==============================================');
-    this.logger.debug('Payload: ', JSON.stringify(payload, null, 2));
+    // Avoid logging full webhook payloads (may contain PII or payment details).
+    // Log a short summary instead.
+    const summary = {
+      event: payload?.event || 'unknown',
+      tx_ref: payload?.data?.tx_ref || payload?.data?.reference || null,
+      status: payload?.data?.status || null,
+    };
+    this.logger.debug('Webhook summary: ' + JSON.stringify(summary));
 
     await this.webhooksService.handleFlutterwaveWebhook(signature, payload);
 
@@ -38,13 +43,11 @@ export class WebhooksController {
   @Post('test')
   @HttpCode(HttpStatus.OK)
   async testWebhook(@Body() payload: any) {
-    this.logger.log('==============================================');
     this.logger.log('Test webhook received');
 
     return {
       success: true,
       message: 'Test webhook received',
-      receivedData: payload,
     };
   }
 }

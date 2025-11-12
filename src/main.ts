@@ -29,21 +29,10 @@ async function bootstrap() {
 
   await app.listen(port);
 
-  console.log('');
-  console.log('=============================================');
-  console.log(' Zora Onramp Server Started');
-  console.log('=============================================');
-  console.log('');
-  console.log(`Server: http://localhost:${port}`);
-  console.log(`API: http://localhost:${port}/api`);
-  console.log(`Health: http://localhost:${port}/api/health`);
-  console.log('');
-  console.log('Endpoints:');
-  console.log(' POST /api/orders/create');
-  console.log(' GET /api/orders/:orderId');
-  console.log(' POST /api/zora/validate-username');
-  console.log(' POST /api/webhooks/flutterwave');
-  console.log('');
+  const logger = app.get('Logger') || console;
+  logger.log && logger.log('Zora Onramp Server Started');
+  // Avoid printing potentially sensitive environment-derived URLs in logs
+  logger.log && logger.log(`API prefix: /api`);
 }
 
 bootstrap();
