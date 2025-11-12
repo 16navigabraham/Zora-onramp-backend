@@ -217,4 +217,75 @@ export class OrderService {
       throw error;
     }
   }
+
+  async reconcileAllPending(): Promise<{
+    checked: number;
+    processed: number;
+    failed: number;
+    results: Array<{ orderId: string; status: string; message: string }>;
+  }> {
+    this.logger.log('Starting manual reconciliation of pending/expired orders');
+
+    // Check both PENDING and EXPIRED orders (user may have paid but order timed out)
+    const pendingOrders = this.orderRepository.findByStatus(OrderStatus.PENDING);
+    const expiredOrders = this.orderRepository.findByStatus(OrderStatus.EXPIRED);
+    const ordersToCheck = [...pendingOrders, ...expiredOrders];
+
+    const results: Array<{ orderId: string; status: string; message: string }> = [];
+    let processed = 0;
+    let failed = 0;
+
+    for (const order of ordersToCheck) {
+      try {
+        this.logger.log(`Checking order ${order.orderId} with Flutterwave`);
+
+        const transaction = await this.flutterwaveService.verifyTransaction(
+          order.virtualAccount.reference,
+        );
+
+        if (transaction.status === 'successful') {
+          this.logger.log(`Payment found for order ${order.orderId}, processing...`);
+          
+          // Reset status to PENDING if it was EXPIRED, so processPayment can handle it
+          if (order.status === OrderStatus.EXPIRED) {
+            order.status = OrderStatus.PENDING;
+            this.orderRepository.save(order);
+          }
+          
+          await this.processPayment(order.orderId);
+          processed++;
+          results.push({
+            orderId: order.orderId,
+            status: 'processed',
+            message: 'Payment verified and processed successfully',
+          });
+        } else {
+          results.push({
+            orderId: order.orderId,
+            status: 'pending',
+            message: `Transaction status: ${transaction.status}`,
+          });
+        }
+      } catch (error) {
+        failed++;
+        this.logger.error(`Failed to reconcile order ${order.orderId}: ${error.message}`);
+        results.push({
+          orderId: order.orderId,
+          status: 'error',
+          message: error.message,
+        });
+      }
+    }
+
+    this.logger.log(
+      `Reconciliation complete: ${ordersToCheck.length} checked, ${processed} processed, ${failed} failed`,
+    );
+
+    return {
+      checked: ordersToCheck.length,
+      processed,
+      failed,
+      results,
+    };
+  }
 }

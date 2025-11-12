@@ -91,4 +91,20 @@ export class OrdersController {
       },
     };
   }
+
+  @Post('reconcile')
+  @HttpCode(HttpStatus.OK)
+  async reconcileAllPending() {
+    const result = await this.orderService.reconcileAllPending();
+
+    return {
+      success: true,
+      summary: {
+        totalChecked: result.checked,
+        successfullyProcessed: result.processed,
+        failed: result.failed,
+      },
+      details: result.results,
+    };
+  }
 }
