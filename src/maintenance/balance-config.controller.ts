@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Logger, UseGuards } from '@nestjs/common';
 import { BalanceCheckService } from './balance-check.service';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
 
 @Controller('admin/balance-config')
+@UseGuards(ApiKeyGuard)
 export class BalanceConfigController {
   private readonly logger = new Logger(BalanceConfigController.name);
 
