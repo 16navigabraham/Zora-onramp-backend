@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Logger, Get, Query } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { BalanceCheckService } from '../maintenance/balance-check.service';
@@ -73,5 +73,42 @@ export class TelegramController {
       this.logger.error(`Failed to handle Telegram update: ${error.message}`);
       return { ok: false };
     }
+  }
+
+  /**
+   * Setup webhook - call this once after deployment
+   * GET /api/telegram/setup-webhook?url=https://yourdomain.com/api/telegram/webhook
+   */
+  @Get('setup-webhook')
+  async setupWebhook(@Query('url') webhookUrl: string) {
+    if (!webhookUrl) {
+      return {
+        error: 'Missing webhook URL',
+        usage: 'GET /api/telegram/setup-webhook?url=https://yourdomain.com/api/telegram/webhook',
+      };
+    }
+
+    const result = await this.telegramService.setWebhook(webhookUrl);
+    return result;
+  }
+
+  /**
+   * Check current webhook status
+   * GET /api/telegram/webhook-info
+   */
+  @Get('webhook-info')
+  async webhookInfo() {
+    const info = await this.telegramService.getWebhookInfo();
+    return info;
+  }
+
+  /**
+   * Delete webhook (for testing)
+   * GET /api/telegram/delete-webhook
+   */
+  @Get('delete-webhook')
+  async deleteWebhook() {
+    const result = await this.telegramService.deleteWebhook();
+    return result;
   }
 }

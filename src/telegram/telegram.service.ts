@@ -218,6 +218,78 @@ export class TelegramService {
     }
   }
 
+  /**
+   * Register webhook URL with Telegram
+   */
+  async setWebhook(webhookUrl: string): Promise<{ success: boolean; message: string }> {
+    if (!this.botToken) {
+      return { success: false, message: 'TELEGRAM_BOT_TOKEN not configured' };
+    }
+
+    if (!webhookUrl) {
+      return { success: false, message: 'Webhook URL is required' };
+    }
+
+    try {
+      const response = await axios.post(`${this.baseUrl}/setWebhook`, {
+        url: webhookUrl,
+        allowed_updates: ['message'],
+      });
+
+      if (response.data?.ok) {
+        this.logger.log(`Webhook registered: ${webhookUrl}`);
+        return { success: true, message: `Webhook registered: ${webhookUrl}` };
+      } else {
+        const desc = response.data?.description || 'Unknown error';
+        return { success: false, message: desc };
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.description || err.message || String(err);
+      this.logger.error(`Failed to set webhook: ${errorMsg}`);
+      return { success: false, message: errorMsg };
+    }
+  }
+
+  /**
+   * Get current webhook info
+   */
+  async getWebhookInfo(): Promise<any> {
+    if (!this.botToken) {
+      return { ok: false, error: 'Bot token not configured' };
+    }
+
+    try {
+      const response = await axios.get(`${this.baseUrl}/getWebhookInfo`);
+      return response.data;
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.description || err.message || String(err);
+      return { ok: false, error: errorMsg };
+    }
+  }
+
+  /**
+   * Delete webhook
+   */
+  async deleteWebhook(): Promise<{ success: boolean; message: string }> {
+    if (!this.botToken) {
+      return { success: false, message: 'Bot token not configured' };
+    }
+
+    try {
+      const response = await axios.post(`${this.baseUrl}/deleteWebhook`);
+      if (response.data?.ok) {
+        this.logger.log('Webhook deleted');
+        return { success: true, message: 'Webhook deleted' };
+      } else {
+        const desc = response.data?.description || 'Unknown error';
+        return { success: false, message: desc };
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.description || err.message || String(err);
+      return { success: false, message: errorMsg };
+    }
+  }
+
   // Convenience methods for specific notification types
   async notifyOrderCreated(orderId: string, amount: number, currency: string): Promise<void> {
     await this.sendNotification({
