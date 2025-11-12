@@ -24,21 +24,48 @@ export class TelegramController {
         return { ok: true };
       }
 
+      // Log incoming command (helps with debugging)
+      this.logger.log(`Telegram command from chat ${chatId}: ${message}`);
+
+      // Handle /balance command
       if (message.startsWith('/balance')) {
-        const balance = await this.contractsService.getContractBalance();
-        const network = await this.contractsService.getNetworkInfo();
-        const status = this.balanceCheckService.getStatus();
+        try {
+          const balance = await this.contractsService.getContractBalance();
+          const network = await this.contractsService.getNetworkInfo();
+          const status = this.balanceCheckService.getStatus();
 
-        const lastAlert = status.lastAlertAt ? new Date(status.lastAlertAt).toISOString() : 'never';
+          const lastAlert = status.lastAlertAt 
+            ? new Date(status.lastAlertAt).toLocaleString('en-NG', { timeZone: 'Africa/Lagos' }) + ' WAT'
+            : 'Never';
 
-        const contractAddress = process.env.CONTRACT_ADDRESS || 'unknown';
-        const maskedAddress = contractAddress && contractAddress !== 'unknown'
-          ? `${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}`
-          : 'unknown';
+          const contractAddress = process.env.CONTRACT_ADDRESS || 'unknown';
+          const maskedAddress = contractAddress && contractAddress !== 'unknown'
+            ? `${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}`
+            : 'unknown';
 
-        const reply = `🔎 Contract balance\n• Address: ${maskedAddress}\n• Balance: ${balance} USDC\n• Network: ${network.name} (chainId ${network.chainId})\n• Last low-balance alert: ${lastAlert} (active: ${status.alerted})`;
+          // Determine status emoji based on alert state
+          const statusEmoji = status.alerted ? '🔴' : '✅';
+          const statusText = status.alerted ? 'Low Balance Alert Active' : 'Balance OK';
 
-        await this.telegramService.sendRawMessageToChat(chatId, reply);
+          const reply = 
+            `🔎 *Contract Balance*\n\n` +
+            `💰 Balance: *${balance} USDC*\n` +
+            `🔗 Address: \`${maskedAddress}\`\n` +
+            `🌐 Network: ${network.name} (Chain ID: ${network.chainId})\n\n` +
+            `${statusEmoji} Status: *${statusText}*\n` +
+            `� Last Alert Sent: ${lastAlert}\n\n` +
+            `� ${new Date().toLocaleString('en-NG', { timeZone: 'Africa/Lagos' })} WAT`;
+
+          await this.telegramService.sendRawMessageToChat(chatId, reply, 'Markdown');
+          this.logger.log(`Sent /balance response to chat ${chatId}`);
+        } catch (err) {
+          this.logger.error(`Failed to fetch balance data: ${err.message}`);
+          await this.telegramService.sendRawMessageToChat(
+            chatId, 
+            `❌ Failed to fetch balance: ${err.message}`,
+            '' // No parse mode = plain text
+          );
+        }
       }
 
       return { ok: true };
