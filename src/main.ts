@@ -27,6 +27,24 @@ async function bootstrap() {
 
   const port = configService.get('port');
 
+  // Wait for ContractsService to signal readiness before starting the server.
+  // Use a bounded timeout so startup doesn't hang indefinitely in prod.
+  try {
+    const contractsService = app.get('ContractsService');
+    if (contractsService && typeof contractsService.ready === 'function') {
+      const readyPromise = contractsService.ready();
+      const timeout = new Promise((resolve) => setTimeout(resolve, 30000)); // 30s
+      const race = await Promise.race([readyPromise.then(() => 'ready'), timeout.then(() => 'timeout')]);
+      if (race === 'timeout') {
+        const logger = new Logger('Bootstrap');
+        logger.warn('ContractsService readiness timed out after 30s; starting server anyway.');
+      }
+    }
+  } catch (err) {
+    const logger = new Logger('Bootstrap');
+    logger.error(`Error while awaiting ContractsService readiness: ${err?.message || err}`);
+  }
+
   await app.listen(port);
 
   const logger = new Logger('Bootstrap');

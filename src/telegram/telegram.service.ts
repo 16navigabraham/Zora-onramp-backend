@@ -26,6 +26,43 @@ export class TelegramService {
     this.baseUrl = `https://api.telegram.org/bot${this.botToken}`;
   }
 
+  /**
+   * Validate Telegram configuration and log friendly warnings.
+   * Returns true when configuration looks OK, false otherwise.
+   */
+  validateConfig(): boolean {
+    const issues: string[] = [];
+    if (!this.botToken) {
+      issues.push('TELEGRAM_BOT_TOKEN is not set');
+    } else {
+      // bot token format is typically like <botId>:<token>
+      const tokenPattern = /^\d+:[A-Za-z0-9_-]+$/;
+      if (!tokenPattern.test(this.botToken)) {
+        issues.push('TELEGRAM_BOT_TOKEN does not match expected pattern (looks invalid)');
+      }
+    }
+
+    if (!this.chatId) {
+      issues.push('TELEGRAM_CHAT_ID is not set');
+    } else {
+      // Accept numeric ids (including negative), or @username
+      const chatPattern = /^(-?\d+|@.+)$/;
+      if (!chatPattern.test(this.chatId)) {
+        issues.push('TELEGRAM_CHAT_ID does not look like a numeric id or @username');
+      }
+    }
+
+    if (issues.length > 0) {
+      this.logger.warn('Telegram configuration issues detected:');
+      issues.forEach(i => this.logger.warn(`  - ${i}`));
+      this.logger.warn('Telegram notifications will be skipped until configuration is fixed.');
+      return false;
+    }
+
+    this.logger.log('Telegram configuration looks valid');
+    return true;
+  }
+
   async sendNotification(notification: TelegramNotification): Promise<void> {
     if (!this.botToken || !this.chatId) {
       this.logger.warn('Telegram bot not configured, skipping notification');
@@ -95,15 +132,53 @@ export class TelegramService {
   }
 
   private async sendMessage(message: string): Promise<void> {
-    const response = await axios.post(`${this.baseUrl}/sendMessage`, {
+    // Send as plain text by default to avoid Markdown formatting errors
+    // which commonly produce HTTP 400 responses from Telegram.
+    const payload: any = {
       chat_id: this.chatId,
       text: message,
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    });
+      disable_web_page_preview: true,
+    };
 
-    if (!response.data.ok) {
-      throw new Error(`Telegram API error: ${response.data.description}`);
+    // Retry once on network/5xx errors
+    const maxAttempts = 2;
+    let attempt = 0;
+    while (attempt < maxAttempts) {
+      try {
+        const response = await axios.post(`${this.baseUrl}/sendMessage`, payload);
+        if (!response.data?.ok) {
+          // Telegram returned an application-level error (e.g. bad chat id, bad message)
+          const desc = response.data?.description || 'Unknown';
+          throw new Error(`Telegram API error: ${desc}`);
+        }
+        return;
+      } catch (err: any) {
+        attempt++;
+        // If it's an axios response error, log concise details; don't dump tokens or full payloads
+        if (err.response) {
+          const status = err.response.status;
+          const desc = err.response.data?.description || err.message;
+          // 4xx errors are client errors (do not retry)
+          if (status >= 400 && status < 500) {
+            this.logger.error(`Telegram API client error ${status}: ${desc}`);
+            throw new Error(desc);
+          }
+          // 5xx: retry
+          this.logger.warn(`Telegram API server error ${status}: ${desc} (attempt ${attempt}/${maxAttempts})`);
+        } else {
+          this.logger.warn(`Telegram send attempt ${attempt} failed: ${err?.message || err}`);
+        }
+
+        if (attempt >= maxAttempts) {
+          // Final failure
+          const messageText = err.response?.data?.description || err.message || String(err);
+          this.logger.error(`Failed to send Telegram message: ${messageText}`);
+          throw err;
+        }
+
+        // Backoff before retrying
+        await new Promise(r => setTimeout(r, 200 * attempt));
+      }
     }
   }
 
@@ -115,16 +190,31 @@ export class TelegramService {
       this.logger.warn('Telegram bot not configured, skipping sendRawMessageToChat');
       return;
     }
-
-    const response = await axios.post(`${this.baseUrl}/sendMessage`, {
+    const payload: any = {
       chat_id: chatId,
       text: message,
-      parse_mode: parseMode,
       disable_web_page_preview: true,
-    });
+    };
 
-    if (!response.data.ok) {
-      throw new Error(`Telegram API error: ${response.data.description}`);
+    // If caller explicitly passed a parseMode, include it; otherwise send plain text
+    if (parseMode) payload.parse_mode = parseMode;
+
+    try {
+      const response = await axios.post(`${this.baseUrl}/sendMessage`, payload);
+      if (!response.data?.ok) {
+        const desc = response.data?.description || 'Unknown';
+        this.logger.error(`Telegram API error: ${desc}`);
+        throw new Error(desc);
+      }
+    } catch (err: any) {
+      if (err.response) {
+        const status = err.response.status;
+        const desc = err.response.data?.description || err.message;
+        this.logger.error(`Failed to sendRawMessageToChat - Telegram API ${status}: ${desc}`);
+      } else {
+        this.logger.error(`Failed to sendRawMessageToChat: ${err?.message || err}`);
+      }
+      throw err;
     }
   }
 

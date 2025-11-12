@@ -14,41 +14,72 @@ const CONTRACT_ABI = [
 @Injectable()
 export class ContractsService implements OnModuleInit {
   private readonly logger = new Logger(ConfigService.name);
+  // readiness promise allows other services to wait until contract is initialized
+  private readyPromise: Promise<void>;
+  private readyResolve!: () => void;
+  private readyReject!: (err: any) => void;
   private provider: ethers.JsonRpcProvider;
   private wallet: ethers.Wallet;
   private contract: ethers.Contract;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) {
+    // initialize the readiness promise
+    this.readyPromise = new Promise((resolve, reject) => {
+      this.readyResolve = resolve;
+      this.readyReject = reject;
+    });
+  }
+
+  /**
+   * Returns a promise that resolves when the contract client is initialized.
+   */
+  ready(): Promise<void> {
+    return this.readyPromise || Promise.resolve();
+  }
 
   onModuleInit() {
     this.initializeContract();
   }
 
   private initializeContract() {
-    const rpcUrl = this.configService.get<string>('blockchain.rpcUrl');
-    const contractAddress = this.configService.get<string>(
-      'blockchain.contractAddress',
-    );
-    const operatorPrivateKey = this.configService.get<string>(
-      'blockchain.operatorPrivateKey',
-    );
+    try {
+      const rpcUrl = this.configService.get<string>('blockchain.rpcUrl');
+      const contractAddress = this.configService.get<string>(
+        'blockchain.contractAddress',
+      );
+      const operatorPrivateKey = this.configService.get<string>(
+        'blockchain.operatorPrivateKey',
+      );
 
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
-    this.wallet = new ethers.Wallet(
-      operatorPrivateKey as string,
-      this.provider,
-    );
-    this.contract = new ethers.Contract(
-      contractAddress as string,
-      CONTRACT_ABI,
-      this.wallet,
-    );
+      this.provider = new ethers.JsonRpcProvider(rpcUrl);
+      this.wallet = new ethers.Wallet(
+        operatorPrivateKey as string,
+        this.provider,
+      );
+      this.contract = new ethers.Contract(
+        contractAddress as string,
+        CONTRACT_ABI,
+        this.wallet,
+      );
 
-  this.logger.log(`Contract initialized: ${contractAddress}`);
-  // Avoid logging full operator address in logs. Mask middle portion.
-  const addr = this.wallet.address || '';
-  const masked = addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'unknown';
-  this.logger.log(`Operator address: ${masked}`);
+      this.logger.log(`Contract initialized: ${contractAddress}`);
+      // Avoid logging full operator address in logs. Mask middle portion.
+      const addr = this.wallet.address || '';
+      const masked = addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'unknown';
+      this.logger.log(`Operator address: ${masked}`);
+
+      // mark ready
+      try {
+        this.readyResolve && this.readyResolve();
+      } catch {}
+    } catch (err) {
+      this.logger.error(`Failed to initialize contract client: ${err?.message || err}`);
+      try {
+        this.readyReject && this.readyReject(err);
+      } catch {}
+      // rethrow so other lifecycle handlers can see errors if needed
+      throw err;
+    }
   }
 
   async createOrder(

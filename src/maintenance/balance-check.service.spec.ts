@@ -14,6 +14,7 @@ describe('BalanceCheckService', () => {
 
     contractsService = {
       getContractBalance: jest.fn(),
+      ready: jest.fn().mockResolvedValue(undefined),
     } as any;
 
     telegramService = {
