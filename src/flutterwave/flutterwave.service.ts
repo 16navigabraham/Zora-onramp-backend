@@ -90,6 +90,27 @@ export class FlutterwaveService {
     const webhookHash = this.configService.get<string>(
       'flutterwave.webhookHash',
     );
-    return signature === webhookHash;
+    
+    if (!webhookHash) {
+      this.logger.error('FLUTTERWAVE_SECRET_HASH not configured!');
+      return false;
+    }
+    
+    if (!signature) {
+      this.logger.error('No signature provided in webhook request');
+      return false;
+    }
+    
+    const isValid = signature === webhookHash;
+    
+    if (!isValid) {
+      this.logger.error('Webhook signature mismatch!');
+      this.logger.error(`Expected hash starts with: ${webhookHash.substring(0, 4)}...`);
+      this.logger.error(`Received signature starts with: ${signature.substring(0, 4)}...`);
+    } else {
+      this.logger.log('✅ Webhook signature verified successfully');
+    }
+    
+    return isValid;
   }
 }
