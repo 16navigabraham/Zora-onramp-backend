@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BalanceCheckService } from './balance-check.service';
-import { ContractsService } from 'src/contracts/contracts.service';
-import { TelegramService } from 'src/telegram/telegram.service';
+import { ContractsService } from '../contracts/contracts.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('BalanceCheckService', () => {

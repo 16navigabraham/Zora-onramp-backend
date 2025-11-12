@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ContractsService } from 'src/contracts/contracts.service';
-import { TelegramService } from 'src/telegram/telegram.service';
+import { ContractsService } from '../contracts/contracts.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

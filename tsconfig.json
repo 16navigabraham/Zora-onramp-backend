@@ -14,9 +14,8 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-  // Suppress deprecation warnings until a proper migration to TS 7.0 is done.
-  // See https://aka.ms/ts6 for migration guidance.
-  "ignoreDeprecations": "6.0",
+  // Note: 'ignoreDeprecations' was removed because some TypeScript versions in CI
+  // do not accept it; migrate baseUrl usage before upgrading to TS 7.0.
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

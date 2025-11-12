@@ -1,7 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
-import { ContractsService } from 'src/contracts/contracts.service';
-import { TelegramService } from 'src/telegram/telegram.service';
-import { BalanceCheckService } from 'src/maintenance/balance-check.service';
+import { ContractsService } from '../contracts/contracts.service';
+import { TelegramService } from '../telegram/telegram.service';
+import { BalanceCheckService } from '../maintenance/balance-check.service';
 
 @Controller('health')
 export class HealthController {

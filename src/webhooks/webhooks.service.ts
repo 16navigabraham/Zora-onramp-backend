@@ -1,7 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { FlutterwaveService } from 'src/flutterwave/flutterwave.service';
-import { OrderService } from 'src/orders/orders.service';
-import { TelegramService } from 'src/telegram/telegram.service';
+import { FlutterwaveService } from '../flutterwave/flutterwave.service';
+import { OrderService } from '../orders/orders.service';
+import { TelegramService } from '../telegram/telegram.service';
 
 @Injectable()
 export class WebhooksService {

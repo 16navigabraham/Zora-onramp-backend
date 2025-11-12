@@ -1,9 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from './orders.repository';
-import { ContractsService } from 'src/contracts/contracts.service';
-import { FlutterwaveService } from 'src/flutterwave/flutterwave.service';
-import { ZoraService } from 'src/zora/zora.service';
-import { TelegramService } from 'src/telegram/telegram.service';
+import { ContractsService } from '../contracts/contracts.service';
+import { FlutterwaveService } from '../flutterwave/flutterwave.service';
+import { ZoraService } from '../zora/zora.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus, ServiceType } from './entities/order.entity';
 import { isAddress } from 'ethers';

@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Logger } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
-import { ContractsService } from 'src/contracts/contracts.service';
-import { BalanceCheckService } from 'src/maintenance/balance-check.service';
+import { ContractsService } from '../contracts/contracts.service';
+import { BalanceCheckService } from '../maintenance/balance-check.service';
 
 @Controller('telegram')
 export class TelegramController {
