@@ -86,11 +86,6 @@ export class OrderService {
 
       this.orderRepository.save(order);
 
-      // Send Telegram notification asynchronously (don't wait for it)
-      this.telegramService.notifyOrderCreated(orderId, amountNGN, 'NGN').catch(error => {
-        this.logger.error(`Failed to send Telegram notification: ${error.message}`);
-      });
-
       this.logger.log(`Order created successfully: ${orderId} for ${determinedServiceType}`);
       return order;
     } catch (error) {
@@ -161,12 +156,15 @@ export class OrderService {
       order.completedAt = Date.now();
       this.orderRepository.save(order);
 
-      // Send Telegram notification for successful payment
+      // Send Telegram notification for successful payment with rich details
       await this.telegramService.notifyPaymentSuccess(
         orderId,
         order.amountNGN,
         'NGN',
-        parseFloat(order.usdcAmount)
+        parseFloat(order.usdcAmount),
+        order.recipientAddress,
+        releaseTxHash,
+        order.username
       );
 
       this.logger.log(`Order ${orderId} completed successfully`);
@@ -180,8 +178,14 @@ export class OrderService {
       order.errorMessage = error.message;
       this.orderRepository.save(order);
 
-      // Send Telegram notification for payment failure
-      await this.telegramService.notifyPaymentFailed(orderId, error.message);
+      // Send Telegram notification for payment failure with details
+      await this.telegramService.notifyPaymentFailed(
+        orderId, 
+        error.message,
+        order.amountNGN,
+        'NGN',
+        order.recipientAddress
+      );
 
       throw error;
     }

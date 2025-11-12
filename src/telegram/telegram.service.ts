@@ -303,37 +303,84 @@ export class TelegramService {
     });
   }
 
-  async notifyPaymentSuccess(orderId: string, amount: number, currency: string, usdcReceived: number): Promise<void> {
-    await this.sendNotification({
-      type: 'payment_success',
-      orderId,
-      amount,
-      currency,
-      usdcReceived,
-      message: `Payment completed successfully! User paid ${amount} ${currency} and received ${usdcReceived} USDC`,
-      timestamp: new Date()
-    });
+  async notifyPaymentSuccess(
+    orderId: string, 
+    amount: number, 
+    currency: string, 
+    usdcReceived: number,
+    recipientAddress?: string,
+    txHash?: string,
+    username?: string
+  ): Promise<void> {
+    let message = `✅ *PAYMENT SUCCESS*\n\n`;
+    message += `🆔 *Order ID:* \`${orderId}\`\n`;
+    message += `💰 *Amount Paid:* ${amount.toLocaleString()} ${currency}\n`;
+    message += `🪙 *USDC Sent:* ${usdcReceived} USDC\n`;
+    
+    if (username) {
+      message += `👤 *Recipient:* ${username}\n`;
+    }
+    
+    if (recipientAddress) {
+      message += `📫 *Address:* \`${recipientAddress.substring(0, 6)}...${recipientAddress.substring(38)}\`\n`;
+    }
+    
+    if (txHash) {
+      message += `🔗 *Transaction:* [View on BaseScan](https://basescan.org/tx/${txHash})\n`;
+    }
+    
+    message += `\n📅 *Time:* ${this.formatWATTime(new Date())}`;
+    
+    await this.sendRawMessageToChat(this.chatId, message, 'Markdown');
   }
 
-  async notifyPaymentFailed(orderId: string, error: string): Promise<void> {
-    await this.sendNotification({
-      type: 'payment_failed',
-      orderId,
-      error,
-      message: `Payment failed for order ${orderId}`,
-      timestamp: new Date()
-    });
+  async notifyPaymentFailed(
+    orderId: string, 
+    error: string,
+    amount?: number,
+    currency?: string,
+    recipientAddress?: string
+  ): Promise<void> {
+    let message = `❌ *PAYMENT FAILED*\n\n`;
+    message += `🆔 *Order ID:* \`${orderId}\`\n`;
+    
+    if (amount && currency) {
+      message += `💰 *Amount:* ${amount.toLocaleString()} ${currency}\n`;
+    }
+    
+    if (recipientAddress) {
+      message += `📫 *Recipient:* \`${recipientAddress.substring(0, 6)}...${recipientAddress.substring(38)}\`\n`;
+    }
+    
+    message += `\n❌ *Error:* ${error}\n`;
+    message += `📅 *Time:* ${this.formatWATTime(new Date())}`;
+    
+    await this.sendRawMessageToChat(this.chatId, message, 'Markdown');
   }
 
-  async notifyOrderCancelled(orderId: string, amount: number, currency: string): Promise<void> {
-    await this.sendNotification({
-      type: 'order_cancelled',
-      orderId,
-      amount,
-      currency,
-      message: `Order cancelled due to timeout - no payment received within 15 minutes`,
-      timestamp: new Date()
-    });
+  async notifyOrderCancelled(
+    orderId: string, 
+    amount: number, 
+    currency: string,
+    recipientAddress?: string,
+    username?: string
+  ): Promise<void> {
+    let message = `⏰ *ORDER EXPIRED*\n\n`;
+    message += `🆔 *Order ID:* \`${orderId}\`\n`;
+    message += `💰 *Amount:* ${amount.toLocaleString()} ${currency}\n`;
+    
+    if (username) {
+      message += `👤 *Recipient:* ${username}\n`;
+    }
+    
+    if (recipientAddress) {
+      message += `📫 *Address:* \`${recipientAddress.substring(0, 6)}...${recipientAddress.substring(38)}\`\n`;
+    }
+    
+    message += `\n⚠️ *Reason:* No payment received within 15 minutes\n`;
+    message += `📅 *Time:* ${this.formatWATTime(new Date())}`;
+    
+    await this.sendRawMessageToChat(this.chatId, message, 'Markdown');
   }
 
   async notifyServerEvent(message: string): Promise<void> {

@@ -36,11 +36,13 @@ export class OrderCleanupService implements OnModuleInit {
         order.status = OrderStatus.EXPIRED;
         this.orderRepository.save(order);
 
-        // Send Telegram notification for order cancellation
+        // Send Telegram notification for order cancellation with details
         await this.telegramService.notifyOrderCancelled(
           order.orderId,
           order.amountNGN,
-          'NGN'
+          'NGN',
+          order.recipientAddress,
+          order.username
         );
 
         this.logger.log(`Order ${order.orderId} marked as expired`);
