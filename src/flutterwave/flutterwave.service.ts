@@ -100,20 +100,15 @@ export class FlutterwaveService {
       return false;
     }
 
-    // Hash the raw body using HMAC-SHA256 as per Flutterwave docs
-    const hash = crypto
-      .createHmac('sha256', secretHash)
-      .update(rawBody)
-      .digest('hex');
-
-    const isValid = hash === signature;
+    // Simple string comparison - Flutterwave sends the secret hash directly
+    const isValid = signature === secretHash;
     
     if (!isValid) {
       this.logger.warn('Webhook signature mismatch');
-      this.logger.debug(`Expected: ${hash}`);
+      this.logger.debug(`Expected: ${secretHash}`);
       this.logger.debug(`Received: ${signature}`);
     } else {
-      this.logger.log('Webhook signature verified successfully');
+      this.logger.log('Webhook signature verified successfully ✅');
     }
 
     return isValid;
