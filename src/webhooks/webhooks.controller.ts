@@ -28,6 +28,11 @@ export class WebhooksController {
     this.logger.log('==============================================');
     this.logger.log('Webhook received from Flutterwave');
     this.logger.log('==============================================');
+    
+    // Log ALL headers to debug signature issue
+    this.logger.debug('All Headers:', JSON.stringify(req.headers, null, 2));
+    this.logger.debug('Signature Header:', signature);
+    
     this.logger.debug('Payload: ', JSON.stringify(payload, null, 2));
 
     // Get raw body for signature verification
