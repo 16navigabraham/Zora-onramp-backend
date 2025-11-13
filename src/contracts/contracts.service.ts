@@ -184,11 +184,20 @@ export class ContractsService implements OnModuleInit {
   }
 
   calculateUSDC(ngnAmount: number): bigint {
+    const feeNGN = this.configService.get<number>('exchange.feeNGN') || 70;
     const rate = this.configService.get<number>('exchange.ngnToUsdRate');
     if (!rate) {
       throw new Error('NGN to USD exchange rate not configured');
     }
-    const usdAmount = ngnAmount / rate;
+    
+    // Deduct fee before converting to USDC
+    const amountAfterFee = ngnAmount - feeNGN;
+    
+    if (amountAfterFee <= 0) {
+      throw new Error(`Amount after fee must be positive (received ${ngnAmount} NGN, fee is ${feeNGN} NGN)`);
+    }
+    
+    const usdAmount = amountAfterFee / rate;
     return ethers.parseUnits(usdAmount.toFixed(6), 6);
   }
 }

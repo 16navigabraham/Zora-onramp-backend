@@ -36,8 +36,8 @@ export class CreateOrderDto {
     walletAddress?: string; // Ethereum wallet address for other services
 
     @IsNumber()
-    @Min(200, { message: 'Minimum amount is 200 NGN'})
-    @Max(1670, { message: 'Maximum amount is 1670 NGN '})
+    @Min(270, { message: 'Minimum amount is 270 NGN (200 NGN + 70 NGN fee)'})
+    @Max(1670, { message: 'Maximum amount is 1670 NGN (1600 NGN + 70 NGN fee)'})
     amountNGN: number;
 
     @IsEmail()

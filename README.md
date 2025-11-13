@@ -110,6 +110,7 @@ USDC_ADDRESS=your_usdc_address
 
 # Exchange
 NGN_TO_USD_RATE=1650
+FEE_NGN=70
 
 # Telegram
 TELEGRAM_BOT_TOKEN=your_bot_token
