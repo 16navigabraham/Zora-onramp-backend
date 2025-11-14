@@ -25,6 +25,11 @@ export class ZoraService {
 
       const profile = response.data.profile;
 
+      // Check if profile exists
+      if (!profile) {
+        throw new Error('Profile not found for this username');
+      }
+
       // Priority 1: Check linkedWallets for SMART_WALLET
       let smartWallet: string | undefined;
       if (profile.linkedWallets?.edges?.length > 0) {
