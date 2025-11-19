@@ -10,6 +10,7 @@ export enum OrderStatus {
 
 export enum ServiceType {
   ZORA = 'zora',
+  FARCASTER = 'farcaster',
   BASEAPP = 'baseapp',
   WALLET = 'wallet',
 }
@@ -18,9 +19,9 @@ export interface Order {
   orderId: string; // Unique order ID (e.g., ORD-1234567890-ABCD)
   orderHash: string; // Hash from smart contract
 
-  recipientAddress: string; // Ethereum address (Zora wallet or direct wallet)
-  username: string; // Zora username or wallet address input
-  serviceType?: ServiceType; // "zora", "baseapp", "wallet" - identifies the service type
+  recipientAddress: string; // Ethereum address (Zora, Farcaster wallet or direct wallet)
+  username: string; // Zora/Farcaster username or wallet address input
+  serviceType?: ServiceType; // "zora", "farcaster", "baseapp", "wallet" - identifies the service type
   email: string; // User email
 
   amountNGN: number; // Amount in Nigerian Naira
@@ -47,7 +48,7 @@ export interface Order {
 }
 
 export interface CreateOrderInput {
-  username?: string; // Zora username (optional)
+  username?: string; // Zora or Farcaster username (optional)
   walletAddress?: string; // Direct wallet address (optional)
   serviceType?: ServiceType; // Service type identifier
   amountNGN: number;

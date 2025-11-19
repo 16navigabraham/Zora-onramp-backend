@@ -3,6 +3,7 @@ import { OrdersRepository } from './orders.repository';
 import { ContractsService } from '../contracts/contracts.service';
 import { FlutterwaveService } from '../flutterwave/flutterwave.service';
 import { ZoraService } from '../zora/zora.service';
+import { FarcasterService } from '../farcaster/farcaster.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus, ServiceType } from './entities/order.entity';
@@ -18,6 +19,7 @@ export class OrderService {
     private contractsService: ContractsService,
     private flutterwaveService: FlutterwaveService,
     private zoraService: ZoraService,
+    private farcasterService: FarcasterService,
     private telegramService: TelegramService,
   ) {}
 
@@ -33,12 +35,21 @@ export class OrderService {
       let recipientIdentifier: string;
       let determinedServiceType: ServiceType;
 
-      // Determine if this is a Zora order or wallet address order
+      // Determine if this is a Zora, Farcaster, Base App, or wallet address order
       if (username) {
-        // Zora username provided - use existing logic
-        recipientAddress = await this.zoraService.getAddressFromUsername(username);
-        recipientIdentifier = username;
-        determinedServiceType = serviceType || ServiceType.ZORA;
+        // Username provided - determine service type
+        if (serviceType === ServiceType.FARCASTER || serviceType === ServiceType.BASEAPP) {
+          // Farcaster or Base App (both use Farcaster API)
+          // Base App usernames are like: abrahamnavig.farcaster.eth
+          recipientAddress = await this.farcasterService.getAddressFromUsername(username);
+          recipientIdentifier = username;
+          determinedServiceType = serviceType;
+        } else {
+          // Default to Zora for backward compatibility or when serviceType is ZORA
+          recipientAddress = await this.zoraService.getAddressFromUsername(username);
+          recipientIdentifier = username;
+          determinedServiceType = serviceType || ServiceType.ZORA;
+        }
       } else {
         // Direct wallet address provided (walletAddress is guaranteed to exist due to DTO validation)
         if (!this.isValidEthereumAddress(walletAddress!)) {

@@ -18,7 +18,7 @@ function IsUsernameOrWalletAddress(validationOptions?: ValidationOptions) {
                     return !!(hasUsername || hasWalletAddress);
                 },
                 defaultMessage(args: ValidationArguments): string {
-                    return 'Either username (for Zora) or walletAddress (for other services) must be provided';
+                    return 'Either username (for Zora/Farcaster) or walletAddress (for other services) must be provided';
                 }
             }
         });
@@ -29,7 +29,7 @@ export class CreateOrderDto {
     @IsString()
     @IsOptional()
     @IsUsernameOrWalletAddress({ message: 'Either username or walletAddress must be provided' })
-    username?: string; // Zora username
+    username?: string; // Zora or Farcaster username
 
     @IsString()
     @IsOptional()
@@ -44,7 +44,7 @@ export class CreateOrderDto {
     @IsNotEmpty()
     email: string;
 
-    @IsEnum(ServiceType, { message: 'ServiceType must be one of: zora, baseapp, wallet' })
+    @IsEnum(ServiceType, { message: 'ServiceType must be one of: zora, farcaster, baseapp, wallet' })
     @IsOptional()
-    serviceType?: ServiceType; // "zora", "baseapp", or "wallet" - identifies the service type
+    serviceType?: ServiceType; // "zora", "farcaster", "baseapp", or "wallet" - identifies the service type
 }
