@@ -38,9 +38,14 @@ src/
 │   ├── webhook.module.ts     # Webhook handling module
 │   ├── webhooks.controller.ts # Webhook endpoints
 │   └── webhooks.service.ts   # Webhook processing service
-└── zora/
-    ├── zora.module.ts        # Zora integration module
-    └── zora.service.ts       # Zora blockchain service
+├── zora/
+│   ├── zora.module.ts        # Zora integration module
+│   ├── zora.controller.ts    # Zora username endpoints
+│   └── zora.service.ts       # Zora blockchain service
+└── farcaster/
+    ├── farcaster.module.ts   # Farcaster integration module
+    ├── farcaster.controller.ts # Farcaster username endpoints
+    └── farcaster.service.ts  # Farcaster API service
 ```
 
 ## 🚀 **Available Endpoints**
@@ -61,6 +66,14 @@ src/
 ### **Webhooks**
 - `POST /api/webhooks/flutterwave` - Flutterwave payment webhook
 - `POST /api/webhooks/test` - Test webhook endpoint
+
+### **Zora**
+- `GET /api/zora/resolve/:username` - Resolve Zora username to wallet address
+- `GET /api/zora/validate/:username` - Validate Zora username or address
+
+### **Farcaster**
+- `GET /api/farcaster/resolve/:username` - Resolve Farcaster username to wallet address
+- `GET /api/farcaster/validate/:username` - Validate Farcaster username or address
 
 ## 🔧 **Features**
 
@@ -111,6 +124,9 @@ USDC_ADDRESS=your_usdc_address
 # Exchange
 NGN_TO_USD_RATE=1650
 FEE_NGN=70
+
+# Farcaster
+NEYNAR_API_KEY=your_neynar_api_key
 
 # Telegram
 TELEGRAM_BOT_TOKEN=your_bot_token

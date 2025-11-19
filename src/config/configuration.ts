@@ -36,6 +36,10 @@ export default () => ({
         botToken: process.env.TELEGRAM_BOT_TOKEN,
         chatId: process.env.TELEGRAM_CHAT_ID,
     },
+    
+    farcaster: {
+        apiKey: process.env.NEYNAR_API_KEY,
+    },
     maintenance: {
         balanceCheck: {
             // Threshold in USDC (default 1 USDC)
