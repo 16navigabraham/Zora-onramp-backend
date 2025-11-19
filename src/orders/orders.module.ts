@@ -5,12 +5,11 @@ import { OrdersRepository } from './orders.repository';
 import { OrderCleanupService } from './order-cleanup.service';
 import { ZoraModule } from '../zora/zora.module';
 import { FarcasterModule } from '../farcaster/farcaster.module';
-import { BaseAppModule } from '../baseapp/baseapp.module';
 import { FlutterwaveModule } from '../flutterwave/flutterwave.module';
 import { ContractsModule } from '../contracts/contracts.module';
 
 @Module({
-  imports: [ZoraModule, FarcasterModule, BaseAppModule, FlutterwaveModule, ContractsModule],
+  imports: [ZoraModule, FarcasterModule, FlutterwaveModule, ContractsModule],
   controllers: [OrdersController],
   providers: [OrderService, OrdersRepository, OrderCleanupService],
   exports: [OrderService],

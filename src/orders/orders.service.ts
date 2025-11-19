@@ -4,7 +4,6 @@ import { ContractsService } from '../contracts/contracts.service';
 import { FlutterwaveService } from '../flutterwave/flutterwave.service';
 import { ZoraService } from '../zora/zora.service';
 import { FarcasterService } from '../farcaster/farcaster.service';
-import { BaseAppService } from '../baseapp/baseapp.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus, ServiceType } from './entities/order.entity';
@@ -21,7 +20,6 @@ export class OrderService {
     private flutterwaveService: FlutterwaveService,
     private zoraService: ZoraService,
     private farcasterService: FarcasterService,
-    private baseAppService: BaseAppService,
     private telegramService: TelegramService,
   ) {}
 
@@ -37,7 +35,7 @@ export class OrderService {
       let recipientIdentifier: string;
       let determinedServiceType: ServiceType;
 
-      // Determine if this is a Zora, Farcaster, Base App, or wallet address order
+      // Determine if this is a Zora, Farcaster, or wallet address order
       if (username) {
         // Username provided - determine service type
         if (serviceType === ServiceType.FARCASTER) {
@@ -45,11 +43,6 @@ export class OrderService {
           recipientAddress = await this.farcasterService.getAddressFromUsername(username);
           recipientIdentifier = username;
           determinedServiceType = ServiceType.FARCASTER;
-        } else if (serviceType === ServiceType.BASEAPP) {
-          // Base App username (uses ENS resolution for .farcaster.eth)
-          recipientAddress = await this.baseAppService.getAddressFromUsername(username);
-          recipientIdentifier = username;
-          determinedServiceType = ServiceType.BASEAPP;
         } else {
           // Default to Zora for backward compatibility or when serviceType is ZORA
           recipientAddress = await this.zoraService.getAddressFromUsername(username);
