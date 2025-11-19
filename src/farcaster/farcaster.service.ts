@@ -17,19 +17,22 @@ export class FarcasterService {
   }
 
   async getAddressFromUsername(username: string): Promise<string> {
+    // Strip @ prefix if present (Farcaster usernames don't use @)
+    const cleanUsername = username.startsWith('@') ? username.slice(1) : username;
+    
     try {
-      this.logger.log(`Resolving Farcaster username: ${username}`);
+      this.logger.log(`Resolving Farcaster username: ${cleanUsername}`);
 
       // If it's already an address, return it
-      if (ethers.isAddress(username)) {
-        this.logger.log(`Input is already an address: ${username}`);
-        return username;
+      if (ethers.isAddress(cleanUsername)) {
+        this.logger.log(`Input is already an address: ${cleanUsername}`);
+        return cleanUsername;
       }
 
       // Fetch user from Neynar API
       const response = await axios.get(`${this.baseUrl}/user/by_username`, {
         params: {
-          username,
+          username: cleanUsername,
         },
         headers: {
           'x-api-key': this.apiKey,
@@ -63,16 +66,24 @@ export class FarcasterService {
         ? 'verified' 
         : 'custody';
 
-      this.logger.log(`Resolved ${username} to ${farcasterAddress} (${addressType})`);
+      this.logger.log(`Resolved ${cleanUsername} to ${farcasterAddress} (${addressType})`);
 
       return farcasterAddress;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
-        this.logger.error(`Farcaster user not found: ${username}`);
-        throw new Error(`Farcaster user not found: ${username}`);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          this.logger.error(`Farcaster user not found: ${cleanUsername}`);
+          throw new Error(`Farcaster user not found: ${cleanUsername}`);
+        } else if (error.response?.status === 400) {
+          this.logger.error(`Invalid Farcaster username format: ${cleanUsername}`);
+          throw new Error(`Invalid Farcaster username: ${cleanUsername}. Usernames cannot contain underscores or special characters.`);
+        } else if (error.response?.status === 429) {
+          this.logger.error(`Neynar API rate limit exceeded`);
+          throw new Error(`Rate limit exceeded. Please try again in a few minutes or check your NEYNAR_API_KEY.`);
+        }
       }
       this.logger.error(`Failed to resolve Farcaster username: ${error.message}`);
-      throw new Error(`Could not resolve username: ${username}`);
+      throw new Error(`Could not resolve username: ${cleanUsername}`);
     }
   }
 
