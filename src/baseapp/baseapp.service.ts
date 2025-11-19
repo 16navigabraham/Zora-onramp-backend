@@ -8,9 +8,11 @@ export class BaseAppService {
   private readonly provider: ethers.JsonRpcProvider;
 
   constructor(private configService: ConfigService) {
-    // Use Base mainnet RPC for ENS resolution
-    const rpcUrl = this.configService.get<string>('blockchain.rpcUrl') || 'https://mainnet.base.org';
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    // Use Ethereum mainnet for ENS/Basename resolution
+    // Basename (.base.eth) is registered on Ethereum mainnet, not Base L2
+    const ethMainnetRpc = 'https://eth.llamarpc.com';
+    this.provider = new ethers.JsonRpcProvider(ethMainnetRpc);
+    this.logger.log('BaseApp service initialized with Ethereum mainnet provider for ENS resolution');
   }
 
   async getAddressFromUsername(usernameOrAddress: string): Promise<string> {
