@@ -9,8 +9,9 @@ export class BaseAppService {
 
   constructor(private configService: ConfigService) {
     // Use Ethereum mainnet for ENS/Basename resolution
-    // Basename (.base.eth) is registered on Ethereum mainnet, not Base L2
-    const ethMainnetRpc = 'https://eth.llamarpc.com';
+    // Basename (.base.eth) is registered on Ethereum mainnet via L2 resolver
+    // Using Cloudflare's public Ethereum RPC for reliability
+    const ethMainnetRpc = 'https://cloudflare-eth.com';
     this.provider = new ethers.JsonRpcProvider(ethMainnetRpc);
     this.logger.log('BaseApp service initialized with Ethereum mainnet provider for ENS resolution');
   }
@@ -32,20 +33,28 @@ export class BaseAppService {
     const ensName: string = username;
 
     try {
-      // Resolve ENS name to address using Base mainnet provider
-      this.logger.log(`Resolving ENS name: ${ensName}`);
+      // Basename uses CCIP-Read (EIP-3668) for L2 resolution
+      // The standard resolveName should support this, but we need to handle errors gracefully
+      this.logger.log(`Resolving ENS/Basename: ${ensName}`);
+      
       const resolvedAddress = await this.provider.resolveName(ensName);
 
       if (!resolvedAddress) {
-        throw new Error(`No wallet address found for ENS name: ${ensName}`);
+        throw new Error(`ENS name ${ensName} not found or not registered`);
       }
 
-      this.logger.log(`Resolved ${ensName} to ${resolvedAddress} via ENS`);
+      this.logger.log(`Resolved ${ensName} to ${resolvedAddress}`);
 
       return resolvedAddress;
     } catch (error) {
-      this.logger.error(`Failed to resolve Base App ENS name: ${error.message}`);
-      throw new Error(`Could not resolve Base App ENS name: ${ensName}`);
+      this.logger.error(`Failed to resolve ${ensName}: ${error.message}`);
+      
+      // Provide helpful error message
+      if (error.message.includes('could not decode result data')) {
+        throw new Error(`ENS name ${ensName} is not registered or has no resolver configured. Please check if this Basename exists.`);
+      }
+      
+      throw new Error(`Could not resolve ${ensName}: ${error.message}`);
     }
   }
 
