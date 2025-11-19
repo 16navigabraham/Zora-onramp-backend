@@ -4,6 +4,7 @@ import { ContractsService } from '../contracts/contracts.service';
 import { FlutterwaveService } from '../flutterwave/flutterwave.service';
 import { ZoraService } from '../zora/zora.service';
 import { FarcasterService } from '../farcaster/farcaster.service';
+import { BaseAppService } from '../baseapp/baseapp.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus, ServiceType } from './entities/order.entity';
@@ -20,6 +21,7 @@ export class OrderService {
     private flutterwaveService: FlutterwaveService,
     private zoraService: ZoraService,
     private farcasterService: FarcasterService,
+    private baseAppService: BaseAppService,
     private telegramService: TelegramService,
   ) {}
 
@@ -38,12 +40,16 @@ export class OrderService {
       // Determine if this is a Zora, Farcaster, Base App, or wallet address order
       if (username) {
         // Username provided - determine service type
-        if (serviceType === ServiceType.FARCASTER || serviceType === ServiceType.BASEAPP) {
-          // Farcaster or Base App (both use Farcaster API)
-          // Base App usernames are like: abrahamnavig.farcaster.eth
+        if (serviceType === ServiceType.FARCASTER) {
+          // Farcaster username (uses Neynar API)
           recipientAddress = await this.farcasterService.getAddressFromUsername(username);
           recipientIdentifier = username;
-          determinedServiceType = serviceType;
+          determinedServiceType = ServiceType.FARCASTER;
+        } else if (serviceType === ServiceType.BASEAPP) {
+          // Base App username (uses ENS resolution for .farcaster.eth)
+          recipientAddress = await this.baseAppService.getAddressFromUsername(username);
+          recipientIdentifier = username;
+          determinedServiceType = ServiceType.BASEAPP;
         } else {
           // Default to Zora for backward compatibility or when serviceType is ZORA
           recipientAddress = await this.zoraService.getAddressFromUsername(username);

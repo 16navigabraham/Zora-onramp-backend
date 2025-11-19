@@ -5,6 +5,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { OrdersModule } from "./orders/orders.module";
 import { ZoraModule } from "./zora/zora.module";
 import { FarcasterModule } from "./farcaster/farcaster.module";
+import { BaseAppModule } from "./baseapp/baseapp.module";
 import { FlutterwaveModule } from "./flutterwave/flutterwave.module";
 import { ContractsModule } from "./contracts/contracts.module";
 import { WebhookModule } from "./webhooks/webhook.module";
@@ -24,6 +25,7 @@ import { BalanceConfigController } from './maintenance/balance-config.controller
     PrismaModule,
     ZoraModule,
     FarcasterModule,
+    BaseAppModule,
     FlutterwaveModule,
     ContractsModule,
     OrdersModule,

@@ -16,18 +16,7 @@ export class FarcasterService {
     }
   }
 
-  async getAddressFromUsername(usernameInput: string): Promise<string> {
-    // Strip .farcaster.eth or .eth suffix for Base App/ENS usernames
-    // Neynar API expects just the username without the ENS suffix
-    let username = usernameInput;
-    if (usernameInput.endsWith('.farcaster.eth')) {
-      username = usernameInput.replace('.farcaster.eth', '');
-      this.logger.log(`Stripped .farcaster.eth suffix: ${usernameInput} → ${username}`);
-    } else if (usernameInput.endsWith('.eth')) {
-      username = usernameInput.replace('.eth', '');
-      this.logger.log(`Stripped .eth suffix: ${usernameInput} → ${username}`);
-    }
-
+  async getAddressFromUsername(username: string): Promise<string> {
     try {
       this.logger.log(`Resolving Farcaster username: ${username}`);
 
