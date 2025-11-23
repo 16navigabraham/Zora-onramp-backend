@@ -63,3 +63,7 @@ FARCASTER_INTEGRATION.md
 FRONTEND_INTEGRATION.md
 MONGODB_SETUP.md
 
+
+# Data backups
+data/*.json
+data/*.csv
