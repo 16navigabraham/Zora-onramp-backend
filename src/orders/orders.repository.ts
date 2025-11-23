@@ -1,117 +1,89 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { Order } from './entities/order.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Order as OrderEntity } from './entities/order.entity';
+import { Order, OrderDocument } from './schemas/order.schema';
 
 /**
  * OrdersRepository
- * Handles data persistence for orders using PostgreSQL via Prisma ORM
+ * Handles data persistence for orders using MongoDB via Mongoose
  */
 @Injectable()
 export class OrdersRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
+  ) {}
 
-  async save(order: Order): Promise<Order> {
-    const data: any = {
+  async save(order: OrderEntity): Promise<OrderEntity> {
+    const data = {
       orderId: order.orderId,
       orderHash: order.orderHash,
       recipientAddress: order.recipientAddress,
       amountNGN: order.amountNGN,
       usdcAmount: order.usdcAmount,
-      virtualAccount: order.virtualAccount as any,
+      virtualAccount: order.virtualAccount,
       status: order.status,
-      createdAt: BigInt(order.createdAt),
-      expiresAt: BigInt(order.expiresAt),
-      completedAt: order.completedAt ? BigInt(order.completedAt) : null,
+      createdAt: order.createdAt,
+      expiresAt: order.expiresAt,
+      completedAt: order.completedAt,
+      email: order.email,
+      username: order.username,
+      serviceType: order.serviceType,
+      createTxHash: order.createTxHash,
+      releaseTxHash: order.releaseTxHash,
+      errorMessage: order.errorMessage,
+      metadata: order.metadata,
     };
 
-    // Add optional fields if they exist
-    if (order.email !== undefined) data.email = order.email;
-    if (order.username !== undefined) data.username = order.username;
-    if (order.serviceType !== undefined) data.serviceType = order.serviceType;
-    if (order.createTxHash !== undefined) data.createTxHash = order.createTxHash;
-    if (order.releaseTxHash !== undefined) data.releaseTxHash = order.releaseTxHash;
-    if (order.errorMessage !== undefined) data.errorMessage = order.errorMessage;
-    if (order.metadata !== undefined) data.metadata = order.metadata as any;
-
-    const saved = await this.prisma.order.upsert({
-      where: { orderId: order.orderId },
-      update: data,
-      create: data,
-    });
+    const saved = await this.orderModel.findOneAndUpdate(
+      { orderId: order.orderId },
+      data,
+      { upsert: true, new: true },
+    );
 
     return this.mapToOrder(saved);
   }
 
-  async findById(orderId: string): Promise<Order | undefined> {
-    const order = await this.prisma.order.findUnique({
-      where: { orderId },
-    });
+  async findById(orderId: string): Promise<OrderEntity | undefined> {
+    const order = await this.orderModel.findOne({ orderId }).exec();
     return order ? this.mapToOrder(order) : undefined;
   }
 
-  async findByOrderHash(orderHash: string): Promise<Order | undefined> {
-    const order = await this.prisma.order.findFirst({
-      where: { orderHash },
-    });
+  async findByOrderHash(orderHash: string): Promise<OrderEntity | undefined> {
+    const order = await this.orderModel.findOne({ orderHash }).exec();
     return order ? this.mapToOrder(order) : undefined;
   }
 
-  async findAll(): Promise<Order[]> {
-    const orders = await this.prisma.order.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(): Promise<OrderEntity[]> {
+    const orders = await this.orderModel.find().sort({ createdAt: -1 }).exec();
     return orders.map((order) => this.mapToOrder(order));
   }
 
-  async findByEmail(email: string): Promise<Order[]> {
-    const orders = await this.prisma.order.findMany({
-      where: { email },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findByEmail(email: string): Promise<OrderEntity[]> {
+    const orders = await this.orderModel.find({ email }).sort({ createdAt: -1 }).exec();
     return orders.map((order) => this.mapToOrder(order));
   }
 
-  async findByStatus(status: string): Promise<Order[]> {
-    const orders = await this.prisma.order.findMany({
-      where: { status },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findByStatus(status: string): Promise<OrderEntity[]> {
+    const orders = await this.orderModel.find({ status }).sort({ createdAt: -1 }).exec();
     return orders.map((order) => this.mapToOrder(order));
   }
 
-  async findByRecipientAddress(address: string): Promise<Order[]> {
-    const orders = await this.prisma.order.findMany({
-      where: {
-        recipientAddress: {
-          equals: address,
-          mode: 'insensitive',
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findByRecipientAddress(address: string): Promise<OrderEntity[]> {
+    const orders = await this.orderModel
+      .find({ recipientAddress: new RegExp(`^${address}$`, 'i') })
+      .sort({ createdAt: -1 })
+      .exec();
     return orders.map((order) => this.mapToOrder(order));
   }
 
-  async update(orderId: string, updates: Partial<Order>): Promise<Order | undefined> {
+  async update(orderId: string, updates: Partial<OrderEntity>): Promise<OrderEntity | undefined> {
     try {
-      const updateData: any = {};
-      
-      if (updates.status !== undefined) updateData.status = updates.status;
-      if (updates.createTxHash !== undefined) updateData.createTxHash = updates.createTxHash;
-      if (updates.releaseTxHash !== undefined) updateData.releaseTxHash = updates.releaseTxHash;
-      if (updates.errorMessage !== undefined) updateData.errorMessage = updates.errorMessage;
-      if (updates.completedAt !== undefined) {
-        updateData.completedAt = updates.completedAt ? BigInt(updates.completedAt) : null;
-      }
-      if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
-      if (updates.virtualAccount !== undefined) updateData.virtualAccount = updates.virtualAccount;
+      const updated = await this.orderModel
+        .findOneAndUpdate({ orderId }, updates, { new: true })
+        .exec();
 
-      const updated = await this.prisma.order.update({
-        where: { orderId },
-        data: updateData,
-      });
-
-      return this.mapToOrder(updated);
+      return updated ? this.mapToOrder(updated) : undefined;
     } catch (error) {
       return undefined;
     }
@@ -119,63 +91,53 @@ export class OrdersRepository {
 
   async delete(orderId: string): Promise<boolean> {
     try {
-      await this.prisma.order.delete({
-        where: { orderId },
-      });
-      return true;
+      const result = await this.orderModel.deleteOne({ orderId }).exec();
+      return result.deletedCount > 0;
     } catch (error) {
       return false;
     }
   }
 
   async count(): Promise<number> {
-    return this.prisma.order.count();
+    return this.orderModel.countDocuments().exec();
   }
 
   async countByStatus(status: string): Promise<number> {
-    return this.prisma.order.count({
-      where: { status },
-    });
+    return this.orderModel.countDocuments({ status }).exec();
   }
 
-  async findAfterTimestamp(timestamp: number): Promise<Order[]> {
-    const orders = await this.prisma.order.findMany({
-      where: {
-        createdAt: {
-          gt: BigInt(timestamp),
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAfterTimestamp(timestamp: number): Promise<OrderEntity[]> {
+    const orders = await this.orderModel
+      .find({ createdAt: { $gt: timestamp } })
+      .sort({ createdAt: -1 })
+      .exec();
     return orders.map((order) => this.mapToOrder(order));
   }
 
-  async findExpired(): Promise<Order[]> {
-    const now = BigInt(Date.now());
-    const orders = await this.prisma.order.findMany({
-      where: {
+  async findExpired(): Promise<OrderEntity[]> {
+    const now = Date.now();
+    const orders = await this.orderModel
+      .find({
         status: 'pending',
-        expiresAt: {
-          lt: now,
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        expiresAt: { $lt: now },
+      })
+      .sort({ createdAt: -1 })
+      .exec();
     return orders.map((order) => this.mapToOrder(order));
   }
 
   async clear(): Promise<void> {
-    await this.prisma.order.deleteMany();
+    await this.orderModel.deleteMany({}).exec();
   }
 
   async getStatistics() {
     const [total, pending, confirmed, completed, failed, orders] = await Promise.all([
-      this.prisma.order.count(),
-      this.prisma.order.count({ where: { status: 'pending' } }),
-      this.prisma.order.count({ where: { status: 'confirmed' } }),
-      this.prisma.order.count({ where: { status: 'completed' } }),
-      this.prisma.order.count({ where: { status: 'failed' } }),
-      this.prisma.order.findMany({ select: { amountNGN: true } }),
+      this.orderModel.countDocuments().exec(),
+      this.orderModel.countDocuments({ status: 'pending' }).exec(),
+      this.orderModel.countDocuments({ status: 'confirmed' }).exec(),
+      this.orderModel.countDocuments({ status: 'completed' }).exec(),
+      this.orderModel.countDocuments({ status: 'failed' }).exec(),
+      this.orderModel.find().select('amountNGN').exec(),
     ]);
 
     return {
@@ -189,74 +151,27 @@ export class OrdersRepository {
   }
 
   /**
-   * Maps Prisma Order model to application Order entity
-   * Converts BigInt timestamps back to numbers
+   * Maps MongoDB document to application Order entity
    */
-  private mapToOrder(prismaOrder: any): Order {
+  private mapToOrder(doc: OrderDocument): OrderEntity {
     return {
-      orderId: prismaOrder.orderId,
-      orderHash: prismaOrder.orderHash,
-      recipientAddress: prismaOrder.recipientAddress,
-      amountNGN: prismaOrder.amountNGN,
-      usdcAmount: prismaOrder.usdcAmount,
-      virtualAccount: prismaOrder.virtualAccount,
-      status: prismaOrder.status,
-      createdAt: Number(prismaOrder.createdAt),
-      expiresAt: Number(prismaOrder.expiresAt),
-      completedAt: prismaOrder.completedAt ? Number(prismaOrder.completedAt) : undefined,
-      email: prismaOrder.email,
-      username: prismaOrder.username,
-      serviceType: prismaOrder.serviceType,
-      createTxHash: prismaOrder.createTxHash,
-      releaseTxHash: prismaOrder.releaseTxHash,
-      errorMessage: prismaOrder.errorMessage,
-      metadata: prismaOrder.metadata,
+      orderId: doc.orderId,
+      orderHash: doc.orderHash,
+      recipientAddress: doc.recipientAddress,
+      amountNGN: doc.amountNGN,
+      usdcAmount: doc.usdcAmount,
+      virtualAccount: doc.virtualAccount as any,
+      status: doc.status as any,
+      createdAt: doc.createdAt,
+      expiresAt: doc.expiresAt,
+      completedAt: doc.completedAt,
+      email: doc.email,
+      username: doc.username,
+      serviceType: doc.serviceType as any,
+      createTxHash: doc.createTxHash,
+      releaseTxHash: doc.releaseTxHash,
+      errorMessage: doc.errorMessage,
+      metadata: doc.metadata,
     };
   }
 }
-
-/**
- * TODO: For production, replace this with a proper database
- *
- * Example with TypeORM:
- *
- * import { Repository } from 'typeorm';
- * import { InjectRepository } from '@nestjs/typeorm';
- *
- * @Injectable()
- * export class OrdersRepository {
- *   constructor(
- *     @InjectRepository(OrderEntity)
- *     private repository: Repository<OrderEntity>,
- *   ) {}
- *
- *   async save(order: Order): Promise<Order> {
- *     return this.repository.save(order);
- *   }
- *
- *   async findById(orderId: string): Promise<Order | null> {
- *     return this.repository.findOne({ where: { orderId } });
- *   }
- *
- *   // ... etc
- * }
- *
- * Example with Prisma:
- *
- * import { PrismaService } from '../prisma/prisma.service';
- *
- * @Injectable()
- * export class OrdersRepository {
- *   constructor(private prisma: PrismaService) {}
- *
- *   async save(order: Order): Promise<Order> {
- *     return this.prisma.order.create({ data: order });
- *   }
- *
- *   async findById(orderId: string): Promise<Order | null> {
- *     return this.prisma.order.findUnique({ where: { orderId } });
- *   }
- *
- *   // ... etc
- * }
- */
