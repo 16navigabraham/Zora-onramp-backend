@@ -5,7 +5,7 @@ export type OrderDocument = Order & Document;
 
 @Schema({ collection: 'orders', timestamps: true })
 export class Order {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   orderId: string;
 
   @Prop({ required: true })

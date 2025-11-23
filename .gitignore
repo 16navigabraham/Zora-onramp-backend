@@ -41,6 +41,7 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+.env.example
 
 # temp directory
 .temp
@@ -62,6 +63,7 @@ API_DOCUMENTATION.md
 FARCASTER_INTEGRATION.md
 FRONTEND_INTEGRATION.md
 MONGODB_SETUP.md
+
 
 
 # Data backups
