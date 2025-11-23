@@ -1,9 +1,9 @@
 services:
   - type: web
     name: zora-onramp-backend
-    env: node
+    runtime: node
     buildCommand: npm install && npm run build
-    startCommand: node dist/main.js
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production

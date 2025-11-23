@@ -12,7 +12,7 @@
     "allowSyntheticDefaultImports": true,
   "target": "ES2022",
     "sourceMap": true,
-    "outDir": "./dist",
+    "outDir": "./dist/src",
   // Note: 'baseUrl' was removed because it's deprecated for TypeScript 7.0+.
   // The editor may still show a diagnostic about this. To resolve that you
   // can either upgrade the workspace TypeScript to a version that supports
