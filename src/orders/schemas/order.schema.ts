@@ -11,7 +11,7 @@ export class Order {
   @Prop({ required: true })
   orderHash: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ required: true })
   recipientAddress: string;
 
   @Prop()
@@ -20,7 +20,7 @@ export class Order {
   @Prop()
   serviceType: string;
 
-  @Prop({ index: true })
+  @Prop()
   email: string;
 
   @Prop({ required: true })
@@ -38,10 +38,10 @@ export class Order {
     expiresAt: string;
   };
 
-  @Prop({ required: true, index: true })
+  @Prop({ required: true })
   status: string;
 
-  @Prop({ required: true, type: Number, index: true })
+  @Prop({ required: true, type: Number })
   createdAt: number;
 
   @Prop({ required: true, type: Number })
