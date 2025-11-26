@@ -21,8 +21,8 @@ export default () => ({
     },
 
     exchange: {
-        ngnToUsdRate: parseFloat(process.env.NGN_TO_USD_RATE || '1600'),
-        feeNGN: parseFloat(process.env.FEE_NGN || '70'),
+        usdcToNgnRate: parseFloat(process.env.USDC_TO_NGN_RATE || '1600'),
+        feePercentage: 0.1, // 10% fee
     },
 
     cors: {
